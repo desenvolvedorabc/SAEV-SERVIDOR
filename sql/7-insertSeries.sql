@@ -1,0 +1,9 @@
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('17', '1º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('18', '2º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('19', '3º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('20', '4º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('21', '5º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('23', '6º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('24', '7º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('25', '8º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('26', '9º Ano Ensino Fundamental', '1');

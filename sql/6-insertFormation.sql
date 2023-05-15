@@ -1,0 +1,17 @@
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (1, 'Letras/Literatura/Língua Portuguesa', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (2, 'Pedagogia/Ciências da Educação', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (3, 'Matématica', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (4, 'História', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (5, 'Letras/Literatura/Língua Estrangeira', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (6, 'Geografia', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (7, 'Educação Física', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (8, 'Ciências', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (9, 'Ciências Biológicas', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (10, 'Belas Artes/Artes Plásticas/Educação Artística', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (11, 'Estudos Sociais', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (12, 'Filosofia', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (13, 'Química', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (14, 'Ciências Sociais/Sociologia', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (15, 'Física', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (16, 'Religião/Teologia', '1');
+INSERT INTO `formacao` (`FOR_ID`, `FOR_NOME`, `FOR_ATIVO`) VALUES (17, 'Demais cursos', '1');

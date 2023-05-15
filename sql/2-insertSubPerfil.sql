@@ -1,0 +1,7 @@
+INSERT INTO `SUB_PERFIL` (`SPE_ID`, `SPE_NOME`, `SPE_PER_ID`) VALUES (2, 'Admin Geral', 1);
+INSERT INTO `SUB_PERFIL` (`SPE_ID`, `SPE_NOME`, `SPE_PER_ID`) VALUES (3, 'Admin Município', 3);
+INSERT INTO `SUB_PERFIL` (`SPE_ID`, `SPE_NOME`, `SPE_PER_ID`) VALUES (1, 'Admin Escola', 2);
+INSERT INTO `SUB_PERFIL` (`SPE_ID`, `SPE_NOME`, `SPE_PER_ID`) VALUES (4, 'Assistente de Educação', 3);
+
+
+
