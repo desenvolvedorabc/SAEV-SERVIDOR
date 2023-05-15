@@ -68,8 +68,8 @@ Para ter acesso ao Dicionário de Dados basta acessar o **data-dictionary.html**
 
 ### 🧶 Modelo Entidade Relacionamento (MER)
 
-![SAEV-MER](https://bitbucket.org/going2-mobile/abemcomum-saev-backend/src/develop/saev-mer.png)
+![SAEV-MER](https://github.com/desenvolvedorabc/SAEV-SERVIDOR/blob/main/saev-mer.png)
 
 ### ⛓ Diagrama Entidade Relacionamento (DER)
 
-![SAEV-DER](https://bitbucket.org/going2-mobile/abemcomum-saev-backend/src/develop/saev-der.png)
+![SAEV-DER](https://github.com/desenvolvedorabc/SAEV-SERVIDOR/blob/main/saev-der.png)
