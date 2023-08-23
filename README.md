@@ -73,3 +73,10 @@ Para ter acesso ao Dicionário de Dados basta acessar o **data-dictionary.html**
 ### ⛓ Diagrama Entidade Relacionamento (DER)
 
 ![SAEV-DER](https://github.com/desenvolvedorabc/SAEV-SERVIDOR/blob/main/saev-der.png)
+
+
+### 🗄️ Réplica do Banco de Dados 
+
+A fim de aliviar a carga do banco de dados principal e proporcionar um ambiente propício para análises avançadas de dados, estabelecemos um banco de dados réplica neste projeto. Esta réplica não só melhora a performance geral do sistema, mas também fortalece a resiliência e a eficiência da nossa infraestrutura de dados.
+
+🔗 Para um entendimento detalhado sobre a configuração, benefícios e características desta réplica, acesse: [Réplica do Banco de Dados - Documentação Detalhada](https://github.com/desenvolvedorabc/SAEV-SERVIDOR/blob/main/docs/README.md).
