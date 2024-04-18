@@ -1,0 +1,9 @@
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('6b109a51-defd-4db0-854d-7a495310b8b4', '1º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('2cc24409-4372-40e9-9d8d-5ffe7041411c', '2º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('7b53c97d-69a5-448c-80b2-5aa97ce9801b', '3º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('6f01412a-30c8-4c41-acf9-eba65cd2ac2b', '4º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('5bb8348b-8d44-4555-81fe-bb143e2b86ba', '5º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('7b3ef578-2db2-42e5-9ac8-7ffbe6d5f74e', '6º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('cb1c9cbc-3628-4c28-a6b6-7799274fc58f', '7º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('9504c478-7e73-479f-be94-e2150e85f43a', '8º Ano Ensino Fundamental', '1');
+INSERT INTO `SAEV`.`SERIES` (`SER_ID`, `SER_NOME`, `SER_ATIVO`) VALUES ('3372c5d4-5cff-480a-813e-66b33022f7dd', '9º Ano Ensino Fundamental', '1');

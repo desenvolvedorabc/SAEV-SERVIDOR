@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  db:
+      container_name: db
+      image: mysql:5.6.47
+      command: --innodb_use_native_aio=0
+      expose:
+          - 3306
+      ports:
+          - 3306:3306
+      environment:
+          - MYSQL_ROOT_PASSWORD=app
+          - MYSQL_DATABASE=abc_saev
+    #   volumes:
+    #       - .docker/db/data:/var/lib/mysql
+      networks:
+          - backend
+#   api:
+#     container_name: api
+#     build:
+#       context: .
+#       target: development
+#     volumes:
+#       - .:/usr/src/app
+#       - /usr/src/app/node_modules
+#     ports:
+#       - ${PORT}:${PORT}
+#       - 9229:9229
+#     #dev 
+#     command: yarn run start:prod
+#     #test
+#     #command: yarn run test:watch
+#     env_file:
+#       - .env
+#     networks:
+#       - backend
+#     depends_on:
+#       - db
+
+networks:
+  backend:
+    driver: bridge

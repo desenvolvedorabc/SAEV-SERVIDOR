@@ -1,0 +1,5 @@
+export enum TypeMicrodata {
+  AVALIACAO = 'AVALIACAO',
+  ALUNOS = 'ALUNOS',
+  INFREQUENCIA = 'INFREQUENCIA',
+}

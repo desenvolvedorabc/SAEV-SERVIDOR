@@ -1,0 +1,1024 @@
+<html><head>
+<title>Schema Report for database: SAEVDev</title>
+<style>
+        td,th {
+        text-align:left;
+        vertical-align:middle;
+        }
+        table {
+        border-collapse: collapse;
+        border: 1px solid;
+        }
+        caption, th, td {
+        padding: .2em .8em;
+        border: 1px solid #000000;
+        }
+        caption {
+        background: #D3D3D3;
+        font-weight: bold;
+        font-size: 1.1em;
+        }
+        th {
+        font-weight: bold;
+        background: #000000;
+        color: white;
+        }
+        td {
+        background: #FFFFFF;
+        }
+        </style>
+      </head>
+     <body>
+<h1>Schema Report for database: SAEVDev</h1>
+<a id="home">Table List </a><br /><ul>
+<li><a href="#aluno">aluno </a></li>
+<li><a href="#aluno_teste">aluno_teste </a></li>
+<li><a href="#aluno_teste_resposta">aluno_teste_resposta </a></li>
+<li><a href="#ano_letivo">ano_letivo </a></li>
+<li><a href="#area">area </a></li>
+<li><a href="#arquivo">arquivo </a></li>
+<li><a href="#avaliacao">avaliacao </a></li>
+<li><a href="#avaliacao_municipio">avaliacao_municipio </a></li>
+<li><a href="#avaliacao_teste">avaliacao_teste </a></li>
+<li><a href="#dados">dados </a></li>
+<li><a href="#disciplina">disciplina </a></li>
+<li><a href="#escola">escola </a></li>
+<li><a href="#forget_password">forget_password </a></li>
+<li><a href="#formacao">formacao </a></li>
+<li><a href="#genero">genero </a></li>
+<li><a href="#infrequencia">infrequencia </a></li>
+<li><a href="#job">job </a></li>
+<li><a href="#matriz_referencia">matriz_referencia </a></li>
+<li><a href="#matriz_referencia_serie">matriz_referencia_serie </a></li>
+<li><a href="#matriz_referencia_topico">matriz_referencia_topico </a></li>
+<li><a href="#matriz_referencia_topico_items">matriz_referencia_topico_items </a></li>
+<li><a href="#messages">messages </a></li>
+<li><a href="#messages_municipios_municipio">messages_municipios_municipio </a></li>
+<li><a href="#messages_schools_escola">messages_schools_escola </a></li>
+<li><a href="#municipio">municipio </a></li>
+<li><a href="#notifications">notifications </a></li>
+<li><a href="#pcd">pcd </a></li>
+<li><a href="#perfil_base">perfil_base </a></li>
+<li><a href="#professor">professor </a></li>
+<li><a href="#raca">raca </a></li>
+<li><a href="#report_descriptor">report_descriptor </a></li>
+<li><a href="#report_edition">report_edition </a></li>
+<li><a href="#report_subject">report_subject </a></li>
+<li><a href="#series">series </a></li>
+<li><a href="#sub_perfil">sub_perfil </a></li>
+<li><a href="#sub_perfil_area">sub_perfil_area </a></li>
+<li><a href="#system_logs">system_logs </a></li>
+<li><a href="#teste">teste </a></li>
+<li><a href="#teste_gabarito">teste_gabarito </a></li>
+<li><a href="#transferencia">transferencia </a></li>
+<li><a href="#turma">turma </a></li>
+<li><a href="#turma_aluno">turma_aluno </a></li>
+<li><a href="#turma_professor">turma_professor </a></li>
+<li><a href="#usuario">usuario </a></li>
+</ul>
+<a id="aluno"></a><table style="width:100%"><caption>Table: aluno </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ALU_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_AVATAR</td><td>TEXT</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_INEP</td><td>VARCHAR(32)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_NOME_MAE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_NOME_PAI</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_NOME_RESP</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_TEL1</td><td>VARCHAR(16)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_TEL2</td><td>VARCHAR(16)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_EMAIL</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_DT_NASC</td><td>VARCHAR(20)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_UF</td><td>ENUM('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO')</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_CIDADE</td><td>VARCHAR(60)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_ENDERECO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_NUMERO</td><td>VARCHAR(10)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_COMPLEMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_BAIRRO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_CEP</td><td>VARCHAR(10)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALU_STATUS</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar se o aluno está enturmado ou não enturmado</td></tr>
+<tr><td>ALU_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ALU_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ALU_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ALU_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_COD</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_ESC_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_SER_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_TUR_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_GEN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_PCD_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALU_PEL_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="aluno_teste"></a><table style="width:100%"><caption>Table: aluno_teste </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ALT_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ALT_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ALT_FINALIZADO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>ALT_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ALT_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ALT_JUSTIFICATIVA</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a justificar caso o aluno não tenha realizado o teste</td></tr>
+<tr><td>ALT_TES_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALT_ALU_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ALT_USU_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="aluno_teste_resposta"></a><table style="width:100%"><caption>Table: aluno_teste_resposta </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ATR_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ATR_RESPOSTA</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ATR_CERTO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar se o aluno acertou ou errou a questão.</td></tr>
+<tr><td>questionTemplateTEGID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ATR_MTI_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>ATR_ALT_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="ano_letivo"></a><table style="width:100%"><caption>Table: ano_letivo </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ANO_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ANO_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ANO_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ANO_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ANO_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ANO_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="area"></a><table style="width:100%"><caption>Table: area </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ARE_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ARE_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ARE_DESCRICAO</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ARE_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ARE_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ARE_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="arquivo"></a><table style="width:100%"><caption>Table: arquivo </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ARQ_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ARQ_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ARQ_URL</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ARQ_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ARQ_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ARQ_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="avaliacao"></a><table style="width:100%"><caption>Table: avaliacao </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>AVA_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>AVA_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>AVA_ANO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>AVA_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>AVA_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>AVA_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>AVA_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo para informar o ID antigo</td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="avaliacao_municipio"></a><table style="width:100%"><caption>Table: avaliacao_municipio </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>AVM_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>AVM_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>AVM_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>AVM_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>AVM_DT_INICIO</td><td>TIMESTAMP</td><td>Yes</td><td>No</td><td>No</td><td>'0000-00-00 00:00:00'</td><td></td></tr>
+<tr><td>AVM_DT_FIM</td><td>TIMESTAMP</td><td>Yes</td><td>No</td><td>No</td><td>'0000-00-00 00:00:00'</td><td></td></tr>
+<tr><td>AVM_DT_DISPONIVEL</td><td>TIMESTAMP</td><td>Yes</td><td>No</td><td>No</td><td>'0000-00-00 00:00:00'</td><td></td></tr>
+<tr><td>AVM_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo para informar o ID antigo</td></tr>
+<tr><td>AVM_MUN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>AVM_AVA_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="avaliacao_teste"></a><table style="width:100%"><caption>Table: avaliacao_teste </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>AVA_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>TES_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="dados"></a><table style="width:100%"><caption>Table: dados </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>DAT_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>DAT_TIPO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>DAT_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>DAT_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>DAT_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>DAT_STATUS</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>DAT_ARQUIVO</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>DAT_OBS</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>DAT_USU_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="disciplina"></a><table style="width:100%"><caption>Table: disciplina </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>DIS_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>DIS_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>DIS_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>DIS_TIPO</td><td>ENUM('Objetiva', 'Leitura')</td><td>Yes</td><td>No</td><td>No</td><td>'Objetiva'</td><td></td></tr>
+<tr><td>DIS_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>DIS_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>DIS_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>DIS_COLOR</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="escola"></a><table style="width:100%"><caption>Table: escola </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>ESC_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_UF</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_INEP</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_CIDADE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_ENDERECO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_NUMERO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_COMPLEMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_BAIRRO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_CEP</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_LOGO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_STATUS</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>ESC_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>ESC_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ESC_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>ESC_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>ESC_MUN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="forget_password"></a><table style="width:100%"><caption>Table: forget_password </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>token</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>isValid</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>userUSUID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="formacao"></a><table style="width:100%"><caption>Table: formacao </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>FOR_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>FOR_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>FOR_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>FOR_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>FOR_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="genero"></a><table style="width:100%"><caption>Table: genero </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>GEN_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>GEN_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>GEN_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>GEN_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>GEN_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="infrequencia"></a><table style="width:100%"><caption>Table: infrequencia </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>IFR_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>IFR_MES</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>IFR_ANO</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>IFR_FALTA</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar a quantidade de faltas</td></tr>
+<tr><td>IFR_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>IFR_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>IFR_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>IFR_ALU_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="job"></a><table style="width:100%"><caption>Table: job </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>assessmentId</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>countyId</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>id</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>bullId</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>jobType</td><td>ENUM('ReportEditionSchoolClass', 'ReportSubjectSchool', 'ReportSubjectCounty', 'ReportSubjectEdition', 'ReportDescriptorsSchool', 'ReportDescriptorsCounty', 'ReportDescriptorsEdition')</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>startDate</td><td>DATETIME</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>endDate</td><td>DATETIME</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="matriz_referencia"></a><table style="width:100%"><caption>Table: matriz_referencia </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MAR_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>MAR_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MAR_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>MAR_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MAR_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MAR_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MAR_DIS_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="matriz_referencia_serie"></a><table style="width:100%"><caption>Table: matriz_referencia_serie </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MAR_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>SER_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="matriz_referencia_topico"></a><table style="width:100%"><caption>Table: matriz_referencia_topico </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MTO_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>MTO_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MTO_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>MTO_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MTO_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MTO_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MTO_MAR_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="matriz_referencia_topico_items"></a><table style="width:100%"><caption>Table: matriz_referencia_topico_items </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MTI_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>MTI_CODIGO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o código do item do tópico</td></tr>
+<tr><td>MTI_DESCRITOR</td><td>TEXT</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar a descrição do item do tópico</td></tr>
+<tr><td>MTI_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>MTI_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MTI_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MTI_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MTI_MTO_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="messages"></a><table style="width:100%"><caption>Table: messages </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MEN_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>MEN_TITLE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o título da mensagem</td></tr>
+<tr><td>MEN_TEXT</td><td>LONGTEXT</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o corpo da mensagem</td></tr>
+<tr><td>MEN_IS_DELETE</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>MEN_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MEN_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="messages_municipios_municipio"></a><table style="width:100%"><caption>Table: messages_municipios_municipio </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>messagesMENID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>municipioMUNID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="messages_schools_escola"></a><table style="width:100%"><caption>Table: messages_schools_escola </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>messagesMENID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>escolaESCID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="municipio"></a><table style="width:100%"><caption>Table: municipio </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>MUN_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_UF</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_CIDADE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_ENDERECO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_NUMERO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_COMPLEMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_BAIRRO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_CEP</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_DT_INICIO</td><td>TIMESTAMP</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MUN_DT_FIM</td><td>TIMESTAMP</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MUN_ARQ_CONVENIO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o arquivo de convênio</td></tr>
+<tr><td>MUN_LOGO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o arquivo de upload da logo</td></tr>
+<tr><td>MUN_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>MUN_STATUS</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>MUN_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MUN_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>MUN_COD_IBGE</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>MUN_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo para informar o ID antigo</td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="notifications"></a><table style="width:100%"><caption>Table: notifications </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>title</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o título da notificicação</td></tr>
+<tr><td>message</td><td>LONGTEXT</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o corpo da notificação</td></tr>
+<tr><td>isReading</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td>Campo destinado a informar se a notificação foi lida</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td>Campo destinado a informar quando a notificação foi criada</td></tr>
+<tr><td>updateAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td>Campo destinado a informar quando a notificação foi atualizada</td></tr>
+<tr><td>userUSUID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="pcd"></a><table style="width:100%"><caption>Table: pcd </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>PCD_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>PCD_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PCD_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>PCD_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>PCD_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PCD_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="perfil_base"></a><table style="width:100%"><caption>Table: perfil_base </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>PER_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>PER_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PER_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>PER_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PER_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="professor"></a><table style="width:100%"><caption>Table: professor </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>PRO_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_EMAIL</td><td>VARCHAR(191)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_FONE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_DOCUMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar a informar o CPF</td></tr>
+<tr><td>PRO_DT_NASC</td><td>DATETIME</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>PRO_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PRO_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PRO_AVATAR</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_UF</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_CIDADE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_ENDERECO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_NUMERO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_COMPLEMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_BAIRRO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_CEP</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PRO_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>PRO_FOR_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>PRO_GEN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>PRO_PEL_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>PRO_MUN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="raca"></a><table style="width:100%"><caption>Table: raca </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>PEL_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>PEL_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>PEL_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>PEL_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PEL_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>PEL_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="report_descriptor"></a><table style="width:100%"><caption>Table: report_descriptor </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>total</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td>Campo destinado a informar quantidade de alunos</td></tr>
+<tr><td>totalCorrect</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td>Campo destinado a informar a quantidade de alunos que acertaram</td></tr>
+<tr><td>createdAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>descriptorMTIID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>reportEditionId</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>testTESID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>id</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="report_edition"></a><table style="width:100%"><caption>Table: report_edition </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>createdAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>schoolClassTURID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>schoolESCID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>countyMUNID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>editionAVAID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="report_subject"></a><table style="width:100%"><caption>Table: report_subject </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>name</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>type</td><td>ENUM('Objetiva', 'Leitura')</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>countTotalStudents</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>countStudentsLaunched</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>countPresentStudents</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>totalGradesStudents</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>fluente</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>nao_fluente</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>frases</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>palavras</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>silabas</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>nao_leitor</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>nao_avaliado</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>nao_informado</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td>'0'</td><td></td></tr>
+<tr><td>createdAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>testTESID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>reportEditionId</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="series"></a><table style="width:100%"><caption>Table: series </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>SER_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>SER_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>SER_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>SER_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>SER_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>SER_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>SER_NUMBER</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="sub_perfil"></a><table style="width:100%"><caption>Table: sub_perfil </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>SPE_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>SPE_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>SPE_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>SPE_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>SPE_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>SPE_PER_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="sub_perfil_area"></a><table style="width:100%"><caption>Table: sub_perfil_area </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>SPE_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>ARE_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="system_logs"></a><table style="width:100%"><caption>Table: system_logs </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>VARCHAR(36)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>method</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o método: POST, DELETE, PUT</td></tr>
+<tr><td>nameEntity</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o nome da entidade que está sendo gerado o log</td></tr>
+<tr><td>stateInitial</td><td>LONGTEXT</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo destinado a informar o estado inicial do dado que será gerado o log</td></tr>
+<tr><td>stateFinal</td><td>LONGTEXT</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o estado final do dado que será gerado o log</td></tr>
+<tr><td>createdAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>DATETIME(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>userUSUID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="teste"></a><table style="width:100%"><caption>Table: teste </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>TES_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>TES_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TES_ANO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TES_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>TES_ARQUIVO</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TES_MANUAL</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TES_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TES_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TES_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TES_DIS_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TES_MAR_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TES_SER_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="teste_gabarito"></a><table style="width:100%"><caption>Table: teste_gabarito </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>TEG_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>TEG_RESPOSTA_CORRETA</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TEG_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TEG_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TEG_ORDEM</td><td>INT(11)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TEG_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TEG_MTI_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TEG_TES_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="transferencia"></a><table style="width:100%"><caption>Table: transferencia </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>TRF_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>TRF_STATUS</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo destinado a informar o status da transferência</td></tr>
+<tr><td>TRF_JUSTIFICATIVA</td><td>VARCHAR(255)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo destinado a informar a justificativa da transferência</td></tr>
+<tr><td>TRF_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TRF_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TRF_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_ALU_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_ESC_ID_ORIGEM</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_ESC_ID_DESTINO</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_TUR_ID_ORIGEM</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_TUR_ID_DESTINO</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_USU_STATUS</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TRF_USU</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="turma"></a><table style="width:100%"><caption>Table: turma </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>TUR_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>TUR_ANO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TUR_PERIODO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TUR_TIPO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o tipo da turma: Regular ou Multisseriada.</td></tr>
+<tr><td>TUR_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>TUR_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>TUR_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TUR_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>TUR_OLD_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td></td></tr>
+<tr><td>TUR_MUN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TUR_ESC_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>TUR_SER_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="turma_aluno"></a><table style="width:100%"><caption>Table: turma_aluno </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>id</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>startDate</td><td>DATE</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a quando o aluno entrou na turma</td></tr>
+<tr><td>endDate</td><td>DATE</td><td>No</td><td>No</td><td>No</td><td>NULL</td><td>Campo destinado a quando o aluno saiu da turma</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>studentALUID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>schoolClassTURID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="turma_professor"></a><table style="width:100%"><caption>Table: turma_professor </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>TUR_ID</td><td>INT(11)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+<tr><td>PRO_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>Yes</td><td></td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+<a id="usuario"></a><table style="width:100%"><caption>Table: usuario </caption>
+<tr><td>Table Comments</td><td colspan="6"></td></tr>
+<tr><td colspan="7">Columns</td></tr>
+        <tr>
+        <th>Name</th>
+        <th>Data Type</th>
+        <th>Nullable</th>
+        <th>PK</th>
+        <th>FK</th>
+        <th>Default</th>
+        <th>Comment</th>
+        </tr>
+<tr><td>USU_ID</td><td>MEDIUMINT(9)</td><td>Yes</td><td>Yes</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_NOME</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_FONE</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_EMAIL</td><td>VARCHAR(191)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_SENHA</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_ATIVO</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td>'1'</td><td></td></tr>
+<tr><td>USU_DT_CRIACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>USU_DT_ATUALIZACAO</td><td>TIMESTAMP(6)</td><td>Yes</td><td>No</td><td>No</td><td>CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)</td><td></td></tr>
+<tr><td>USU_AVATAR</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td>Campo destinado a informar o upload do avatar</td></tr>
+<tr><td>USU_DOCUMENTO</td><td>VARCHAR(255)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>isChangePasswordWelcome</td><td>TINYINT(4)</td><td>Yes</td><td>No</td><td>No</td><td></td><td></td></tr>
+<tr><td>USU_MUN_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>USU_ESC_ID</td><td>INT(11)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+<tr><td>USU_SPE_ID</td><td>MEDIUMINT(9)</td><td>No</td><td>No</td><td>Yes</td><td>NULL</td><td></td></tr>
+</table><a href="#home">Table List </a></br>
+</body></html>
