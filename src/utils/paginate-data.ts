@@ -1,14 +1,14 @@
-import { PaginationTypeEnum, paginate } from "nestjs-typeorm-paginate";
-import { SelectQueryBuilder } from "typeorm";
+import { paginate, PaginationTypeEnum } from 'nestjs-typeorm-paginate'
+import { SelectQueryBuilder } from 'typeorm'
 
 export async function paginateData<T>(
   page: number,
   limit: number,
   queryBuilder: SelectQueryBuilder<T>,
   isCsv = false,
-  countQueries = true
+  countQueries = true,
 ) {
-  if(isCsv) {
+  if (isCsv) {
     const data = await queryBuilder.getMany()
 
     return {
@@ -19,7 +19,7 @@ export async function paginateData<T>(
         itemsPerPage: 0,
         totalItems: 0,
         totalPages: 0,
-      }
+      },
     }
   }
 
@@ -29,16 +29,16 @@ export async function paginateData<T>(
     paginationType: PaginationTypeEnum.TAKE_AND_SKIP,
     countQueries,
     metaTransformer: ({ currentPage, itemCount, itemsPerPage, totalItems }) => {
-      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const totalPages = Math.ceil(totalItems / itemsPerPage)
       return {
         currentPage,
         itemCount,
         itemsPerPage,
         totalItems,
         totalPages: totalPages === 0 ? 1 : totalPages,
-      };
+      }
     },
-  });
+  })
 
-  return data;
+  return data
 }

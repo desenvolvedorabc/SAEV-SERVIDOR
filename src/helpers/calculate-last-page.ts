@@ -1,4 +1,4 @@
 function getLastPage(total: number, perPage: number) {
-  return Math.ceil(total / perPage);
+  return Math.ceil(total / perPage)
 }
-export default getLastPage;
+export default getLastPage

@@ -10,5 +10,5 @@ export const namesForMonths = {
   9: 'SET',
   10: 'OUT',
   11: 'NOV',
-  12: 'DEZ'
+  12: 'DEZ',
 }

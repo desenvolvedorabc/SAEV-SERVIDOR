@@ -1,0 +1,19 @@
+import { Module } from '@nestjs/common'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { County } from 'src/modules/counties/model/entities/county.entity'
+import { NotificationsModule } from 'src/modules/notifications/notification.module'
+import { School } from 'src/modules/school/model/entities/school.entity'
+
+import { MessagesController } from './controller/message.controller'
+import { Message } from './model/entities/message.entity'
+import { MessagesService } from './service/message.service'
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([Message, County, School]),
+    NotificationsModule,
+  ],
+  providers: [MessagesService],
+  controllers: [MessagesController],
+})
+export class MessagesModule {}

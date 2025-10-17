@@ -1,14 +1,21 @@
-if (process.env.NODE_ENV != "production") {
-  import("source-map-support/register");
+import { Logger, ValidationPipe } from '@nestjs/common'
+import { NestFactory } from '@nestjs/core'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { json, urlencoded } from 'body-parser'
+import {
+  initializeTransactionalContext,
+  patchTypeORMRepositoryWithBaseRepository,
+} from 'typeorm-transactional-cls-hooked'
+
+import { AppModule } from './app.module'
+import { createDirs } from './utils/create-files'
+if (process.env.NODE_ENV !== 'production') {
+  import('source-map-support/register')
 }
-import { ValidationPipe } from "@nestjs/common";
-import { NestFactory } from "@nestjs/core";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { json, urlencoded } from "body-parser";
-import { AppModule } from "./app.module";
-import { createDirs } from "./utils/create-files";
 
 createDirs()
+initializeTransactionalContext()
+patchTypeORMRepositoryWithBaseRepository()
 
 /**
  * @returns true if the specified tag is surrounded with `{`
@@ -23,23 +30,28 @@ createDirs()
  * @see {@link http://example.com/@internal | the @internal tag}
  */
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.use(json({ limit: "50mb" }));
+  const app = await NestFactory.create(AppModule)
+  app.use(json({ limit: '50mb' }))
   app.use(
-    urlencoded({ limit: "50mb", extended: true, parameterLimit: 1000000 }),
-  );
-  app.setGlobalPrefix("v1");
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    urlencoded({ limit: '50mb', extended: true, parameterLimit: 1000000 }),
+  )
+  app.setGlobalPrefix('v1')
+  app.useGlobalPipes(new ValidationPipe({ transform: true }))
   app.enableCors()
 
   const options = new DocumentBuilder()
-    .setTitle("SAEV API")
-    .setVersion("1.0.0")
+    .setTitle('SAEV API')
+    .setVersion('1.0.0')
     .addBearerAuth()
-    .build();
+    .build()
 
-  const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup("v1/swagger", app, document);
-  await app.listen(process.env.PORT || 8080);
+  const document = SwaggerModule.createDocument(app, options)
+  SwaggerModule.setup('v1/swagger', app, document)
+
+  const logger = new Logger('bootstrap')
+  const port = process.env.PORT || 8080
+  await app.listen(port, () => {
+    logger.log(`Listening on port ${port}`)
+  })
 }
-bootstrap();
+bootstrap()

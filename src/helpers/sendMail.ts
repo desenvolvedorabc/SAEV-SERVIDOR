@@ -1,14 +1,14 @@
-import * as nodemailer from "nodemailer";
-import Mail from "nodemailer/lib/mailer";
+import * as nodemailer from 'nodemailer'
+import Mail from 'nodemailer/lib/mailer'
 
 export const sendEmail = async (
   email: string,
   subject: string,
   html: string,
-  attachments: Mail.Attachment[] = []
+  attachments: Mail.Attachment[] = [],
 ) => {
   try {
-    let transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       service: process.env.MAIL_SERVICE,
       port: 587,
@@ -20,18 +20,18 @@ export const sendEmail = async (
       tls: {
         rejectUnauthorized: false,
       },
-    });
+    })
 
     await transporter.sendMail({
       from: process.env.MAIL_REPLY,
       to: email,
-      subject: subject,
-      html: html,
-      attachments
-    });
+      subject,
+      html,
+      attachments,
+    })
 
-    console.log("email sent sucessfully");
+    console.log('email sent sucessfully')
   } catch (error) {
-    console.log(error, "email not sent");
+    console.log(error, 'email not sent')
   }
-};
+}

@@ -1,4 +1,4 @@
-import { Student } from "src/student/model/entities/student.entity";
+import { Student } from 'src/modules/student/model/entities/student.entity'
 import {
   Column,
   CreateDateColumn,
@@ -6,32 +6,32 @@ import {
   ManyToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm'
 
-@Entity({ name: "pcd" })
+@Entity({ name: 'pcd' })
 export class Pcd {
-  @PrimaryGeneratedColumn("increment", { type: "mediumint" })
-  PCD_ID: number;
+  @PrimaryGeneratedColumn('increment', { type: 'mediumint' })
+  PCD_ID: number
 
   @Column({
     type: String,
   })
-  PCD_NOME: string;
+  PCD_NOME: string
 
   @Column({
-    default: () => "1",
+    default: () => '1',
   })
-  PCD_ATIVO: boolean;
+  PCD_ATIVO: boolean
 
-  @ManyToMany(() => Student, student => student.ALU_DEFICIENCIAS)
+  @ManyToMany(() => Student, (student) => student.ALU_DEFICIENCIAS)
   students: Student[]
 
   @Column({ nullable: true, unique: true })
-  PCD_OLD_ID: number;
+  PCD_OLD_ID: number
 
-  @CreateDateColumn({ type: "timestamp" })
-  PCD_DT_CRIACAO: Date;
+  @CreateDateColumn({ type: 'timestamp' })
+  PCD_DT_CRIACAO: Date
 
-  @UpdateDateColumn({ type: "timestamp" })
-  PCD_DT_ATUALIZACAO: Date;
+  @UpdateDateColumn({ type: 'timestamp' })
+  PCD_DT_ATUALIZACAO: Date
 }

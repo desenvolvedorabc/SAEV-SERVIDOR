@@ -1,16 +1,20 @@
+import { ApiProperty } from '@nestjs/swagger'
+import { Transform, Type } from 'class-transformer'
 import {
   IsDateString,
   IsEnum,
+  IsInt,
   IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
-} from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
-import { MethodEnum } from "src/system-logs/model/enum/method.enum";
-import { Transform } from "class-transformer";
+} from 'class-validator'
+import { format, parseISO } from 'date-fns'
+import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
+import { MethodEnum } from 'src/modules/system-logs/model/enum/method.enum'
+import { RoleProfile } from 'src/shared/enums/role.enum'
 
 export class PaginationParams {
   @ApiProperty({
@@ -19,7 +23,7 @@ export class PaginationParams {
   })
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
-  page = 1;
+  page = 1
 
   @ApiProperty({
     type: Number,
@@ -27,7 +31,7 @@ export class PaginationParams {
   })
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
-  limit = 10;
+  limit = 10
 
   @ApiProperty({
     type: String,
@@ -35,31 +39,16 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  search: string;
+  search: string
 
   @ApiProperty({
     type: String,
     required: false,
-    default: "ASC",
+    default: 'ASC',
   })
   @IsString()
   @IsOptional()
-  order: 'ASC' | 'DESC' = 'ASC';
-
-  @ApiProperty({
-    type: String,
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  status: string;
-
-  @ApiProperty({
-    type: String,
-    required: false,
-  })
-  @IsOptional()
-  active?: '0' | '1' = null;
+  order: 'ASC' | 'DESC' = 'ASC'
 
   @ApiProperty({
     type: String,
@@ -67,7 +56,22 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  column: string;
+  status: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsOptional()
+  active?: '0' | '1' = null
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  column: string
 
   @ApiProperty({
     type: Number,
@@ -76,7 +80,7 @@ export class PaginationParams {
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
   @IsOptional()
-  county: number;
+  county: number
 
   @ApiProperty({
     type: Number,
@@ -85,7 +89,7 @@ export class PaginationParams {
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
   @IsOptional()
-  school: number;
+  school: number
 
   @ApiProperty({
     type: Number,
@@ -94,7 +98,7 @@ export class PaginationParams {
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
   @IsOptional()
-  schoolClass: number;
+  schoolClass: number
 
   @ApiProperty({
     type: Number,
@@ -104,7 +108,7 @@ export class PaginationParams {
   @MinLength(1)
   @MaxLength(2)
   @IsOptional()
-  month: number;
+  month: number
 
   @ApiProperty({
     type: String,
@@ -112,7 +116,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  profileBase: string;
+  profileBase: string
 
   @ApiProperty({
     type: String,
@@ -120,7 +124,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  subProfile: string;
+  subProfile: string
 
   @ApiProperty({
     type: String,
@@ -128,7 +132,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  subject: string;
+  subject: string
 
   @ApiProperty({
     type: String,
@@ -136,7 +140,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  edition: string;
+  edition: string
 
   @ApiProperty({
     type: String,
@@ -144,7 +148,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  serie: string;
+  serie: string
 
   @ApiProperty({
     type: String,
@@ -152,7 +156,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  year: string;
+  year: string
 
   @ApiProperty({
     type: String,
@@ -160,7 +164,7 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  type: string;
+  type: string
 
   @ApiProperty({
     type: String,
@@ -168,42 +172,86 @@ export class PaginationParams {
   })
   @IsString()
   @IsOptional()
-  student: string;
+  student: string
+
+  @ApiProperty({
+    enum: RoleProfile,
+  })
+  @IsEnum(RoleProfile)
+  @IsOptional()
+  roleProfile?: RoleProfile
+
+  @ApiProperty({
+    enum: TypeSchoolEnum,
+  })
+  @IsEnum(TypeSchoolEnum)
+  @IsOptional()
+  typeSchool?: TypeSchoolEnum = null
+
+  @ApiProperty()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stateId?: number
+
+  @ApiProperty()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  stateRegionalId?: number
+
+  @ApiProperty()
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  municipalityOrUniqueRegionalId?: number
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsOptional()
+  verifyExistsRegional?: '0' | '1' = null
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsOptional()
+  isEpvPartner?: '0' | '1' = null
+
+  @ApiProperty({
+    type: Date,
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  @Transform(({ value }) =>
+    value?.trim() ? format(parseISO(value), 'yyyy-MM-dd') : null,
+  )
+  date?: Date = null
 
   isCsv? = false
+
+  countQueries? = false
+
+  verifyProfileForState? = false
 }
 
 export class PaginationParamsLogs {
   @ApiProperty({
     type: String,
-    default: "1",
+    default: '1',
   })
   @IsString()
-  page: string;
+  page: string
 
   @ApiProperty({
     type: String,
-    default: "10",
+    default: '10',
   })
   @IsString()
-  limit: string;
-
-  @ApiProperty({
-    type: String,
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  search: string;
-
-  @ApiProperty({
-    type: String,
-    required: false,
-    default: "ASC",
-  })
-  @IsString()
-  @IsOptional()
-  order: "ASC" | "DESC";
+  limit: string
 
   @ApiProperty({
     type: String,
@@ -211,7 +259,16 @@ export class PaginationParamsLogs {
   })
   @IsString()
   @IsOptional()
-  column: string;
+  search: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    default: 'ASC',
+  })
+  @IsString()
+  @IsOptional()
+  order: 'ASC' | 'DESC'
 
   @ApiProperty({
     type: String,
@@ -219,7 +276,15 @@ export class PaginationParamsLogs {
   })
   @IsString()
   @IsOptional()
-  county: string;
+  column: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  county: string
 
   @ApiProperty({
     type: Number,
@@ -228,7 +293,7 @@ export class PaginationParamsLogs {
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
   @IsOptional()
-  school: number;
+  school: number
 
   @ApiProperty({
     enum: MethodEnum,
@@ -236,7 +301,7 @@ export class PaginationParamsLogs {
   })
   @IsEnum(MethodEnum)
   @IsOptional()
-  method: MethodEnum;
+  method: MethodEnum
 
   @ApiProperty({
     type: String,
@@ -244,7 +309,7 @@ export class PaginationParamsLogs {
   })
   @IsString()
   @IsOptional()
-  entity: string;
+  entity: string
 
   @ApiProperty({
     type: Date,
@@ -252,7 +317,7 @@ export class PaginationParamsLogs {
   })
   @IsDateString()
   @IsOptional()
-  initialDate: Date;
+  initialDate: Date
 
   @ApiProperty({
     type: Date,
@@ -260,5 +325,5 @@ export class PaginationParamsLogs {
   })
   @IsDateString()
   @IsOptional()
-  finalDate: Date;
+  finalDate: Date
 }
