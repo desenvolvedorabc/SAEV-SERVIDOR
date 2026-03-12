@@ -1,5 +1,7 @@
 import {
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
@@ -21,9 +23,14 @@ import {
 } from '../dto/create-tutor-message.dto'
 import {
   SendTutorMessage,
-  StatusSendTutorMessage,
+  SendTutorMessageStatus,
 } from '../entities/send-tutor-message.entity'
 import { TutorMessage } from '../entities/tutor-message.entity'
+import {
+  AggregatedTutorMessageStatus,
+  decideChannelStatus,
+  decideFinalStatus,
+} from '../helpers'
 import { SendTutorMessagesService } from './send-tutor-messages.service'
 
 @Injectable()
@@ -32,10 +39,12 @@ export class TutorMessagesService {
     @InjectRepository(TutorMessage)
     private readonly tutorMessagesRepository: Repository<TutorMessage>,
 
-    private readonly connection: Connection,
-
+    @Inject(forwardRef(() => SendTutorMessagesService))
     private readonly sendTutorMessagesService: SendTutorMessagesService,
+
     private readonly messageTemplatesService: MessageTemplatesService,
+
+    private readonly connection: Connection,
   ) {}
 
   async create(dto: CreateTutorMessageDto) {
@@ -174,11 +183,14 @@ export class TutorMessagesService {
 
     const mapperItems = await Promise.all(
       data?.items?.map(async (tutorMessage) => {
-        const status = await this.getStatusSendTutorMessages(tutorMessage.id)
+        const { status, metrics } = await this.getStatusSendTutorMessages(
+          tutorMessage.id,
+        )
 
         return {
           ...tutorMessage,
           status,
+          metrics,
         }
       }),
     )
@@ -266,22 +278,118 @@ export class TutorMessagesService {
     }
   }
 
-  private async getStatusSendTutorMessages(tutorMessageId: number) {
-    const verifyStudentsPending =
-      await this.getSendTutorMessagePending(tutorMessageId)
+  async getStatusSendTutorMessages(tutorMessageId: number): Promise<{
+    status: AggregatedTutorMessageStatus
+    metrics: {
+      email: {
+        pending: number
+        sent: number
+        fail: number
+        notSent: number
+        status: string
+        total: number
+      }
+      whatsapp: {
+        pending: number
+        sent: number
+        fail: number
+        notSent: number
+        status: string
+        total: number
+      }
+    }
+  }> {
+    const qb = this.connection
+      .getRepository(SendTutorMessage)
+      .createQueryBuilder('stm')
+      .select('COUNT(stm.id)', 'total')
+      .addSelect(
+        `SUM(CASE WHEN stm.statusEmail IN (:...pending) THEN 1 ELSE 0 END)`,
+        'email_pending',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusEmail IN (:...sent) THEN 1 ELSE 0 END)`,
+        'email_sent',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusEmail = :f THEN 1 ELSE 0 END)`,
+        'email_fail',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusEmail IN (:...n) THEN 1 ELSE 0 END)`,
+        'email_not_sent',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusWhatsapp IN (:...pending) THEN 1 ELSE 0 END)`,
+        'wa_pending',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusWhatsapp IN (:...sent) THEN 1 ELSE 0 END)`,
+        'wa_sent',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusWhatsapp = :f THEN 1 ELSE 0 END)`,
+        'wa_fail',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusWhatsapp IN (:...n) THEN 1 ELSE 0 END)`,
+        'wa_not_sent',
+      )
 
-    if (verifyStudentsPending) {
-      return 'pending'
+      .where('stm.tutorMessageId = :id', { id: tutorMessageId })
+      .setParameters({
+        pending: [
+          SendTutorMessageStatus.PENDENTE,
+          SendTutorMessageStatus.PENDENTE_JANELA,
+        ],
+        f: SendTutorMessageStatus.FALHOU,
+        n: [
+          SendTutorMessageStatus.NAO_ENVIADO,
+          SendTutorMessageStatus.USUARIO_RECUSOU,
+        ],
+        sent: [SendTutorMessageStatus.ENVIADO, SendTutorMessageStatus.ENTREGUE],
+      })
+
+    const r = await qb.getRawOne<{
+      total: string
+      email_pending: string
+      email_sent: string
+      email_fail: string
+      email_not_sent: string
+      wa_pending: string
+      wa_sent: string
+      wa_fail: string
+      wa_not_sent: string
+    }>()
+
+    const total = Number(r?.total ?? 0)
+
+    const emailCounts = {
+      pending: Number(r?.email_pending ?? 0),
+      sent: Number(r?.email_sent ?? 0),
+      fail: Number(r?.email_fail ?? 0),
+      notSent: Number(r?.email_not_sent ?? 0),
+      total,
+    }
+    const waCounts = {
+      pending: Number(r?.wa_pending ?? 0),
+      sent: Number(r?.wa_sent ?? 0),
+      fail: Number(r?.wa_fail ?? 0),
+      notSent: Number(r?.wa_not_sent ?? 0),
+      total,
     }
 
-    const verifyStudentsFail =
-      await this.getSendTutorMessageFail(tutorMessageId)
+    const emailStatus = decideChannelStatus(emailCounts)
+    const waStatus = decideChannelStatus(waCounts)
+    const finalStatus = decideFinalStatus(emailStatus, waStatus)
 
-    if (verifyStudentsFail) {
-      return 'fail'
+    return {
+      status: finalStatus,
+      metrics: {
+        email: { ...emailCounts, status: emailStatus },
+        whatsapp: { ...waCounts, status: waStatus },
+      },
     }
-
-    return 'send'
   }
 
   private async verifyCountyWppOrEmailActive(schoolId: number) {
@@ -311,44 +419,5 @@ export class TutorMessagesService {
       activeWpp: county.MUN_MENSAGEM_WHATSAPP_ATIVO,
       activeEmail: county.MUN_MENSAGEM_EMAIL_ATIVO,
     }
-  }
-
-  private async getSendTutorMessagePending(tutorMessageId: number) {
-    const sendTutorMessage = await this.connection
-      .getRepository(SendTutorMessage)
-      .createQueryBuilder('SendTutorMessage')
-      .select(['SendTutorMessage.id as id'])
-      .where('SendTutorMessage.tutorMessageId = :tutorMessageId', {
-        tutorMessageId,
-      })
-      .andWhere(
-        '(SendTutorMessage.statusEmail = :statusEmail OR SendTutorMessage.statusWhatsapp = :statusWhatsapp)',
-        {
-          statusEmail: StatusSendTutorMessage.PENDENTE,
-          statusWhatsapp: StatusSendTutorMessage.PENDENTE,
-        },
-      )
-      .getRawOne()
-
-    return sendTutorMessage
-  }
-
-  private async getSendTutorMessageFail(tutorMessageId: number) {
-    const sendTutorMessage = await this.connection
-      .getRepository(SendTutorMessage)
-      .createQueryBuilder('SendTutorMessage')
-      .select(['SendTutorMessage.id as id'])
-      .where('SendTutorMessage.tutorMessageId = :tutorMessageId', {
-        tutorMessageId,
-      })
-      .andWhere(
-        `((SendTutorMessage.statusEmail = '${StatusSendTutorMessage.FALHOU}' and SendTutorMessage.statusWhatsapp = '${StatusSendTutorMessage.FALHOU}')
-          or (SendTutorMessage.statusEmail = '${StatusSendTutorMessage.NAO_ENVIADO}' and SendTutorMessage.statusWhatsapp = '${StatusSendTutorMessage.FALHOU}')
-          or (SendTutorMessage.statusEmail = '${StatusSendTutorMessage.FALHOU}' and SendTutorMessage.statusWhatsapp = '${StatusSendTutorMessage.NAO_ENVIADO}')
-        )`,
-      )
-      .getRawOne()
-
-    return sendTutorMessage
   }
 }

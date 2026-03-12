@@ -26,6 +26,7 @@ import { paginateData } from 'src/utils/paginate-data'
 import { Between, Connection, Repository } from 'typeorm'
 
 import { editFileName } from '../../../helpers/utils'
+// import { ResponsiblesService } from '../../responsibles/responsibles.service'
 import { mapperResponseStudents } from '../mappers'
 import { CreateStudentDto } from '../model/dto/create-student.dto'
 import { GroupStudentDto } from '../model/dto/group-student.dto'
@@ -47,6 +48,8 @@ export class StudentService {
     private assessmentsRepository: Repository<Assessment>,
 
     private schoolClassService: SchoolClassService,
+
+    // private responsiblesService: ResponsiblesService,
 
     @InjectConnection()
     private readonly connection: Connection,
@@ -75,7 +78,7 @@ export class StudentService {
 
     if (search?.trim()) {
       queryBuilder.andWhere(
-        '(Student.ALU_NOME LIKE :q OR Student.ALU_INEP LIKE :q)',
+        '(Student.ALU_NOME LIKE :q OR Student.ALU_INEP LIKE :q OR Student.ALU_CPF LIKE :q OR REPLACE(REPLACE(REPLACE(Student.ALU_CPF, ".", ""), "-", ""), "/", "") LIKE :q)',
         { q: `%${search}%` },
       )
     }
@@ -192,8 +195,7 @@ export class StudentService {
   }
 
   async getByTransfer(params: PaginationParams, user: User) {
-    const { page, limit, school, typeSchool, verifyProfileForState } =
-      formatParamsByProfile(params, user, true, true)
+    const { page, limit, school } = params
 
     const { queryBuilder } = this.getQueryBuilderForPaginateStudents(
       params,
@@ -207,20 +209,18 @@ export class StudentService {
       })
     }
 
-    if (
-      [RoleProfile.ESCOLA, RoleProfile.MUNICIPIO_MUNICIPAL]?.includes(
-        user?.USU_SPE?.role,
-      )
-    ) {
-      queryBuilder.andWhere('ALU_ESC.ESC_TIPO = :typeSchool', {
-        typeSchool,
+    const userRole = user?.USU_SPE?.role
+
+    if (school) {
+      queryBuilder.andWhere('ALU_ESC.ESC_ID = :schoolId', {
+        schoolId: school,
       })
     }
 
-    if (verifyProfileForState) {
-      queryBuilder.andWhere(
-        `((ALU_ESC.ESC_TIPO = '${TypeSchoolEnum.ESTADUAL}') or (ALU_ESC.ESC_TIPO = '${TypeSchoolEnum.MUNICIPAL}' && ESC_MUN.MUN_COMPARTILHAR_DADOS IS TRUE))`,
-      )
+    if ([RoleProfile.ESCOLA].includes(userRole)) {
+      queryBuilder.andWhere('ESC_MUN.MUN_ID = :countyId', {
+        countyId: user?.USU_MUN?.MUN_ID,
+      })
     }
 
     const data = await paginateData(page, limit, queryBuilder, false, false)
@@ -288,6 +288,20 @@ export class StudentService {
             TUR_ID: turId,
           } as any)
         }
+
+        // if (createStudentDto.ALU_EMAIL?.trim()) {
+        //   const responsible =
+        //     await this.responsiblesService.findOrCreateByEmail(
+        //       createStudentDto.ALU_EMAIL,
+        //       createStudentDto.ALU_NOME_RESP,
+        //     )
+        //   if (responsible) {
+        //     await this.studentRepository.update(student.ALU_ID, {
+        //       ALU_RES: responsible,
+        //     })
+        //   }
+        // }
+
         return student as IStudent
       })
   }
@@ -640,6 +654,29 @@ export class StudentService {
     if (updateStudentDto.ALU_NOME) {
       delete updateStudentDto.ALU_ATIVO
     }
+
+    // if (updateStudentDto.ALU_EMAIL !== undefined) {
+    //   const currentStudent = await this.studentRepository.findOne({
+    //     where: { ALU_ID },
+    //     relations: ['ALU_RES'],
+    //   })
+
+    //   const oldEmail = currentStudent?.ALU_RES?.email?.toLowerCase() || null
+    //   const newEmail = updateStudentDto.ALU_EMAIL?.trim()?.toLowerCase() || null
+
+    //   if (oldEmail !== newEmail) {
+    //     if (newEmail) {
+    //       const responsible =
+    //         await this.responsiblesService.findOrCreateByEmail(
+    //           newEmail,
+    //           updateStudentDto.ALU_NOME_RESP || currentStudent?.ALU_NOME_RESP,
+    //         )
+    //       ;(updateStudentDto as any).ALU_RES = responsible
+    //     } else {
+    //       ;(updateStudentDto as any).ALU_RES = null
+    //     }
+    //   }
+    // }
 
     return this.studentRepository.save(
       { ...updateStudentDto, ALU_ID },
@@ -1054,7 +1091,12 @@ export class StudentService {
     user: User,
     forTransfer = false,
   ) {
-    const params = formatParamsByProfile(paginationParams, user, true)
+    const params = formatParamsByProfile(
+      paginationParams,
+      user,
+      true,
+      forTransfer,
+    )
 
     const {
       search,
@@ -1065,7 +1107,21 @@ export class StudentService {
       stateId,
       typeSchool,
       schoolClass,
+      column,
+      order,
     } = params
+
+    const columnMap: Record<string, string> = {
+      ALU_ID: 'Student.ALU_ID',
+      ALU_INEP: 'Student.ALU_INEP',
+      ALU_NOME: 'Student.ALU_NOME',
+      ALU_STATUS: 'Student.ALU_STATUS',
+      SER_NOME: 'ALU_SER.SER_NOME',
+      TUR_NOME: 'ALU_TUR.TUR_NOME',
+    }
+    const orderColumn = columnMap[column] ?? 'Student.ALU_NOME'
+    const orderDirection: 'ASC' | 'DESC' =
+      order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'
 
     const userRole = user?.USU_SPE?.role
 
@@ -1093,22 +1149,24 @@ export class StudentService {
       .leftJoin('ALU_ESC.ESC_MUN', 'ESC_MUN')
       .leftJoin('Student.ALU_SER', 'ALU_SER')
       .leftJoin('Student.ALU_TUR', 'ALU_TUR')
+    // .orderBy(orderColumn, orderDirection)
+    // .addOrderBy('Student.ALU_NOME', 'ASC')
 
     if (search) {
       queryBuilder.andWhere(
-        '(Student.ALU_NOME LIKE :search OR Student.ALU_INEP LIKE :search)',
+        '(Student.ALU_NOME LIKE :search OR Student.ALU_INEP LIKE :search OR Student.ALU_CPF LIKE :search OR REPLACE(REPLACE(REPLACE(Student.ALU_CPF, ".", ""), "-", ""), "/", "") LIKE :search)',
         { search: `%${search}%` },
       )
     }
 
     if (active !== null) {
       queryBuilder.andWhere('Student.ALU_ATIVO = :active', { active })
+    }
 
-      if ([RoleProfile.ESTADO].includes(userRole)) {
-        queryBuilder.andWhere('ALU_ESC.ESC_TIPO = :type', {
-          type: TypeSchoolEnum.ESTADUAL,
-        })
-      }
+    if (!forTransfer && [RoleProfile.ESTADO].includes(userRole)) {
+      queryBuilder.andWhere('ALU_ESC.ESC_TIPO = :type', {
+        type: TypeSchoolEnum.ESTADUAL,
+      })
     }
 
     if (schoolClass) {

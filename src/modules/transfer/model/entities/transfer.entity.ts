@@ -67,4 +67,7 @@ export class Transfer {
 
   @Column({ nullable: true, unique: true })
   TRF_OLD_ID: number
+
+  @Column({ type: 'boolean', default: false })
+  TRF_NOTIFICADO: boolean
 }

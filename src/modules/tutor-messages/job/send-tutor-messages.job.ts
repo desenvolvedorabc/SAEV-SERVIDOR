@@ -1,28 +1,34 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { ConversationWindowStatus } from 'src/modules/twilio/entities/whatsapp-conversation-window.entity'
+import { ConversationWindowService } from 'src/modules/twilio/services/conversation-window.service'
+import { EmailService } from 'src/modules/twilio/services/email.service'
+import { WhatsappService } from 'src/modules/twilio/services/whatsapp.service'
 import { Repository } from 'typeorm'
 
 import {
   SendTutorMessage,
-  StatusSendTutorMessage,
+  SendTutorMessageStatus,
 } from '../entities/send-tutor-message.entity'
-import { EmailService } from '../services/email.service'
 import { TutorMessagesService } from '../services/tutor-messages.service'
-import { WhatsappService } from '../services/whatsapp.service'
 
 interface ISendTutorMessage {
   id: number
-  statusEmail: StatusSendTutorMessage
-  statusWhatsapp: StatusSendTutorMessage
+  studentId: number
+  statusEmail: SendTutorMessageStatus
+  statusWhatsapp: SendTutorMessageStatus
   ALU_EMAIL: string
   ALU_WHATSAPP: string
   ALU_NOME: string
+  ESC_NOME: string
   title: string
   content: string
 }
 
 @Injectable()
 export class SendTutorMessagesCronJob {
+  private readonly logger = new Logger(SendTutorMessagesCronJob.name)
+
   constructor(
     @InjectRepository(SendTutorMessage)
     private readonly sendTutorMessageRepository: Repository<SendTutorMessage>,
@@ -32,43 +38,50 @@ export class SendTutorMessagesCronJob {
     private readonly whatsappService: WhatsappService,
 
     private readonly emailService: EmailService,
+
+    private readonly conversationWindowService: ConversationWindowService,
   ) {}
 
   async processSendTutorMessagesPending() {
+    const BATCH_SIZE = 500
+
     const pending = await this.sendTutorMessageRepository
       .createQueryBuilder('SendTutorMessage')
       .select([
         'SendTutorMessage.id as id',
+        'SendTutorMessage.studentId as studentId',
         'SendTutorMessage.tutorMessageId as tutorMessageId',
         'SendTutorMessage.statusEmail as statusEmail',
         'SendTutorMessage.statusWhatsapp as statusWhatsapp',
         'Student.ALU_EMAIL as ALU_EMAIL',
         'Student.ALU_WHATSAPP as ALU_WHATSAPP',
         'Student.ALU_NOME as ALU_NOME',
+        'School.ESC_NOME as ESC_NOME',
       ])
       .innerJoin('SendTutorMessage.student', 'Student')
+      .innerJoin('Student.ALU_ESC', 'School')
       .where(
         '(SendTutorMessage.statusEmail = :statusEmail OR SendTutorMessage.statusWhatsapp = :statusWhatsapp)',
         {
-          statusEmail: StatusSendTutorMessage.PENDENTE,
-          statusWhatsapp: StatusSendTutorMessage.PENDENTE,
+          statusEmail: SendTutorMessageStatus.PENDENTE,
+          statusWhatsapp: SendTutorMessageStatus.PENDENTE,
         },
       )
-      .limit(500)
+      .limit(BATCH_SIZE)
       .getRawMany()
 
     if (!pending.length) {
       return
     }
 
-    const { tutorMessage } = await this.tutorMessagesService.findOne(
-      pending[0]?.tutorMessageId,
-    )
-
     const promises: Promise<void>[] = []
 
     for (const item of pending) {
-      if (item.statusEmail === StatusSendTutorMessage.PENDENTE) {
+      const { tutorMessage } = await this.tutorMessagesService.findOne(
+        item?.tutorMessageId,
+      )
+
+      if (item.statusEmail === SendTutorMessageStatus.PENDENTE) {
         promises.push(
           this.processEmail({
             ...item,
@@ -78,7 +91,7 @@ export class SendTutorMessagesCronJob {
         )
       }
 
-      if (item.statusWhatsapp === StatusSendTutorMessage.PENDENTE) {
+      if (item.statusWhatsapp === SendTutorMessageStatus.PENDENTE) {
         promises.push(
           this.processWhatsapp({
             ...item,
@@ -94,37 +107,88 @@ export class SendTutorMessagesCronJob {
 
   private async processEmail(data: ISendTutorMessage): Promise<void> {
     try {
+      const customArgs = {
+        id: String(data.id),
+        type: 'manual',
+      }
+
       await this.emailService.send(
-        data.id,
         data.content,
         data.title,
         data.ALU_EMAIL,
+        customArgs,
       )
 
       await this.sendTutorMessageRepository.update(
         { id: data.id },
-        { statusEmail: StatusSendTutorMessage.ENVIADO },
+        { statusEmail: SendTutorMessageStatus.ENVIADO },
       )
-    } catch {
+    } catch (err) {
+      this.logger.error(
+        `Erro ao processar WhatsApp para ${data.ALU_NOME}:`,
+        err,
+      )
       await this.sendTutorMessageRepository.update(
         { id: data.id },
-        { statusEmail: StatusSendTutorMessage.FALHOU },
+        { statusEmail: SendTutorMessageStatus.FALHOU },
       )
     }
   }
 
   private async processWhatsapp(data: ISendTutorMessage): Promise<void> {
     try {
-      await this.whatsappService.send(data.ALU_WHATSAPP, data.content, data.id)
+      const statusCallback = `${process.env.HOST_APP_URL}/v1/twilio/status?id=${data.id}&type=manual`
+
+      const hasActiveWindow =
+        await this.conversationWindowService.hasActiveWindow(
+          data.studentId,
+          data.ALU_WHATSAPP,
+        )
+
+      if (hasActiveWindow) {
+        await this.whatsappService.sendFreeFormMessage(
+          data.ALU_WHATSAPP,
+          data.content,
+          statusCallback,
+        )
+
+        await this.sendTutorMessageRepository.update(
+          { id: data.id },
+          { statusWhatsapp: SendTutorMessageStatus.ENVIADO },
+        )
+
+        return
+      }
+
+      const { window, status } =
+        await this.conversationWindowService.findOrCreatePendingOptIn(
+          data.studentId,
+          data.ALU_WHATSAPP,
+        )
+
+      if (status !== ConversationWindowStatus.PENDING_OPT_IN) {
+        const result = await this.whatsappService.sendOptInTemplate(
+          data.ALU_WHATSAPP,
+        )
+
+        await this.conversationWindowService.updateOptInMessageSid(
+          window.id,
+          result.sid,
+        )
+      }
 
       await this.sendTutorMessageRepository.update(
         { id: data.id },
-        { statusWhatsapp: StatusSendTutorMessage.ENVIADO },
+        { statusWhatsapp: SendTutorMessageStatus.PENDENTE_JANELA },
       )
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `Erro ao processar WhatsApp para ${data.ALU_NOME}:`,
+        error,
+      )
       await this.sendTutorMessageRepository.update(
         { id: data.id },
-        { statusWhatsapp: StatusSendTutorMessage.FALHOU },
+        { statusWhatsapp: SendTutorMessageStatus.FALHOU },
       )
     }
   }

@@ -122,6 +122,12 @@ export class County {
   })
   MUN_MENSAGEM_EMAIL_ATIVO: boolean
 
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  MUN_LEITURA_HERBY_ATIVO: boolean
+
   @Column()
   MUN_STATUS: string
 

@@ -20,10 +20,7 @@ import { Connection, Repository } from 'typeorm'
 import { Transactional } from 'typeorm-transactional-cls-hooked'
 
 import { JUSTIFICATION_LEVEL, READING_LEVEL } from '../constants/levels'
-import {
-  CreateStudentsTestsAnswersDto,
-  CreateStudentsTestsDto,
-} from '../model/dto/create-students-tests.dto'
+import { CreateStudentsTestsDto } from '../model/dto/create-students-tests.dto'
 import { ImportResultStudentDto } from '../model/dto/import-result-students.dto'
 import { StudentTest } from '../model/entities/student-test.entity'
 import { StudentTestAnswer } from '../model/entities/student-test-answer.entity'
@@ -337,12 +334,14 @@ export class ReleaseResultsService {
           ...createStudentsTestsDto,
           schoolClass: student?.ALU_TUR,
           ALT_FORNECEDOR: 'Herby',
+          ALT_USU: null,
           ALT_ID: altId.ALT_ID,
         })
       } else {
         studentTest = await queryRunner.manager.save(StudentTest, {
           ...createStudentsTestsDto,
           ALT_FORNECEDOR: 'Herby',
+          ALT_USU: null,
           schoolClass: student?.ALU_TUR,
         })
       }
@@ -395,12 +394,14 @@ export class ReleaseResultsService {
           ...createStudentsTestsDto,
           schoolClass: student?.ALU_TUR,
           ALT_FORNECEDOR: 'Edler',
+          ALT_USU: null,
           ALT_ID: altId.ALT_ID,
         })
       } else {
         studentTest = await queryRunner.manager.save(StudentTest, {
           ...createStudentsTestsDto,
           ALT_FORNECEDOR: 'Edler',
+          ALT_USU: null,
           schoolClass: student?.ALU_TUR,
         })
       }
@@ -441,50 +442,55 @@ export class ReleaseResultsService {
       await this.deleteAllAnswersFromStudentTest(createdStudentTest.ALT_ID)
     }
 
-    await Promise.all(
-      ALT_RESPOSTAS?.map(async (answers: CreateStudentsTestsAnswersDto) => {
-        const atrAlt = JSON.parse(JSON.stringify(createdStudentTest))
-        delete atrAlt.ALT_RESPOSTAS
-        answers.ATR_ALT = atrAlt
-        const idTeg = answers?.ATR_TEG
-        const idTest = JSON.parse(JSON.stringify(saveStudentTest.ALT_TES))
+    const idTest = String(saveStudentTest.ALT_TES)
+    const { ALT_ID } = createdStudentTest
 
-        const question = await this.findQuestionTemplate(idTest, +idTeg)
+    const [questionsMap, existingAnswersMap] = await Promise.all([
+      this.findQuestionTemplatesByTest(idTest),
+      this.findAllStudentTestAnswersByAltId(ALT_ID),
+    ])
 
-        if (question) {
-          answers.ATR_CERTO =
-            answers.ATR_RESPOSTA.toUpperCase() ===
-            question.TEG_RESPOSTA_CORRETA.toUpperCase()
+    const toInsert: Partial<StudentTestAnswer>[] = []
+    const toUpdate: Partial<StudentTestAnswer>[] = []
 
-          const { ALT_ID } = atrAlt
-          const studentAnswersExisting =
-            await this.findStudentTestsAnswersExisting(+idTeg, ALT_ID)
+    for (const answer of ALT_RESPOSTAS) {
+      const idTeg = +answer?.ATR_TEG
+      const question = questionsMap.get(idTeg)
+      const existingAnswer = existingAnswersMap.get(idTeg)
 
-          const formattedData = {
-            ...answers,
-            questionTemplate: question,
-            ATR_MTI: question?.TEG_MTI,
-          }
+      const formattedAnswer: Partial<StudentTestAnswer> = {
+        ...answer,
+        ATR_ALT: createdStudentTest,
+        questionTemplate: question,
+        ATR_MTI: question?.TEG_MTI,
+        ATR_CERTO:
+          !!question &&
+          answer?.ATR_RESPOSTA?.toUpperCase() ===
+            question?.TEG_RESPOSTA_CORRETA?.toUpperCase(),
+      }
 
-          if (studentAnswersExisting) {
-            await this.studentsTestsAnswersEntity.save({
-              ...formattedData,
-              ATR_ID: studentAnswersExisting.ATR_ID,
-            })
+      if (existingAnswer) {
+        formattedAnswer.ATR_ID = existingAnswer.ATR_ID
+        toUpdate.push(formattedAnswer)
+      } else {
+        toInsert.push(formattedAnswer)
+      }
+    }
 
-            return formattedData
-          }
+    if (toInsert.length) {
+      await this.studentsTestsAnswersEntity
+        .createQueryBuilder()
+        .insert()
+        .into(StudentTestAnswer)
+        .values(toInsert)
+        .execute()
+    }
 
-          await this.studentsTestsAnswersEntity.save(formattedData)
-
-          return formattedData
-        } else {
-          await this.studentsTestsAnswersEntity.save(answers)
-
-          return answers
-        }
-      }),
-    )
+    if (toUpdate.length) {
+      await Promise.all(
+        toUpdate.map((answer) => this.studentsTestsAnswersEntity.save(answer)),
+      )
+    }
   }
 
   async deleteAllAnswersFromStudentTest(altId: number) {
@@ -508,7 +514,7 @@ export class ReleaseResultsService {
         'MUNICIPIO',
         'MUNICIPIO.MUN_ID = ESCOLA.ESC_MUN_ID',
       )
-      .where(`ALUNO.ALU_SER_ID = '${idSerie}'`)
+      .where('ALUNO.ALU_SER_ID = :idSerie', { idSerie })
       .orderBy('ALUNO.ALU_NOME')
     return paginateRaw<any>(queryBuilder, options)
   }
@@ -535,9 +541,9 @@ export class ReleaseResultsService {
         'MUNICIPIO.MUN_ID = ESCOLA.ESC_MUN_ID',
       )
       .andWhere('ALUNO.ALU_ATIVO = 1')
-      .andWhere(`ALUNO.ALU_SER_ID = '${idSerie}'`)
-      .andWhere(`ALUNO.ALU_ESC_ID = '${schoolId}'`)
-      .andWhere(`ALUNO.ALU_TUR_ID = '${schoolClassId}'`)
+      .andWhere('ALUNO.ALU_SER_ID = :idSerie', { idSerie })
+      .andWhere('ALUNO.ALU_ESC_ID = :schoolId', { schoolId })
+      .andWhere('ALUNO.ALU_TUR_ID = :schoolClassId', { schoolClassId })
 
     const order: any = orderBy
 
@@ -567,9 +573,45 @@ export class ReleaseResultsService {
         'ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = ALUNO_TESTE.ALT_ID',
       )
       .where(
-        `ALUNO_TESTE.ALT_ALU_ID = '${idStudent}' AND ALUNO_TESTE.ALT_TES_ID = '${idTest}'`,
+        'ALUNO_TESTE.ALT_ALU_ID = :idStudent AND ALUNO_TESTE.ALT_TES_ID = :idTest',
+        { idStudent, idTest },
       )
       .execute()
+  }
+
+  async findTestsByStudentBatch(
+    idTest: number,
+    studentIds: number[],
+  ): Promise<Map<number, any[]>> {
+    if (!studentIds.length) {
+      return new Map()
+    }
+
+    const rows = await this.studentTestRepository
+      .createQueryBuilder('ALUNO_TESTE')
+      .select([
+        'ALUNO_TESTE.ALT_FINALIZADO, ALUNO_TESTE.ALT_DT_ATUALIZACAO, ALUNO_TESTE.ALT_FORNECEDOR,ALUNO_TESTE.ALT_BY_AVA_ONLINE, ALUNO_TESTE.ALT_BY_HERBY,  ALUNO_TESTE.ALT_BY_EDLER, USUARIO.USU_NOME, ALUNO_TESTE.ALT_JUSTIFICATIVA, schoolClass.TUR_ID,ALUNO_TESTE_RESPOSTA.*, ALUNO_TESTE.ALT_ALU_ID',
+      ])
+      .leftJoin('usuario', 'USUARIO', 'USUARIO.USU_ID = ALUNO_TESTE.ALT_USU_ID')
+      .leftJoin('ALUNO_TESTE.schoolClass', 'schoolClass')
+      .leftJoin(
+        'aluno_teste_resposta',
+        'ALUNO_TESTE_RESPOSTA',
+        'ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = ALUNO_TESTE.ALT_ID',
+      )
+      .where('ALUNO_TESTE.ALT_TES_ID = :idTest', { idTest })
+      .andWhere('ALUNO_TESTE.ALT_ALU_ID IN (:...studentIds)', { studentIds })
+      .execute()
+
+    const map = new Map<number, any[]>()
+    for (const row of rows) {
+      const aluId = row.ALUNO_TESTE_ALT_ALU_ID ?? row.ALT_ALU_ID
+      if (!map.has(aluId)) {
+        map.set(aluId, [])
+      }
+      map.get(aluId).push(row)
+    }
+    return map
   }
 
   async findTestById(testId: number) {
@@ -579,7 +621,7 @@ export class ReleaseResultsService {
         'TESTE.TES_NOME, TESTE.TES_ID, TESTE.TES_SER_ID, TES_DIS.DIS_NOME, TES_DIS.DIS_TIPO',
       ])
       .leftJoin('TESTE.TES_DIS', 'TES_DIS')
-      .where(`TESTE.TES_ID = '${testId}'`)
+      .where('TESTE.TES_ID = :testId', { testId })
       .getRawOne()
 
     return [test]
@@ -591,7 +633,7 @@ export class ReleaseResultsService {
       .select(
         'TESTE_GABARITO.TEG_ID, TESTE_GABARITO.TEG_MTI_ID, TESTE_GABARITO.TEG_ORDEM',
       )
-      .where(`TESTE_GABARITO.TEG_TES_ID = '${idTest}'`)
+      .where('TESTE_GABARITO.TEG_TES_ID = :idTest', { idTest })
       .orderBy('TESTE_GABARITO.TEG_ORDEM')
       .execute()
   }
@@ -600,11 +642,50 @@ export class ReleaseResultsService {
     return this.testTemplateRepository
       .createQueryBuilder('TESTE_GABARITO')
       .where(
-        `TESTE_GABARITO.TEG_TES_ID = '${idTest}' 
-          AND TESTE_GABARITO.TEG_ID = '${idQuestion}'`,
+        'TESTE_GABARITO.TEG_TES_ID = :idTest AND TESTE_GABARITO.TEG_ID = :idQuestion',
+        { idTest, idQuestion },
       )
       .leftJoinAndSelect('TESTE_GABARITO.TEG_MTI', 'TEG_MTI')
       .getOne()
+  }
+
+  async findQuestionTemplatesByTest(
+    idTest: string,
+  ): Promise<Map<number, TestTemplate>> {
+    const templates = await this.testTemplateRepository
+      .createQueryBuilder('TESTE_GABARITO')
+      .where('TESTE_GABARITO.TEG_TES_ID = :idTest', { idTest })
+      .leftJoinAndSelect('TESTE_GABARITO.TEG_MTI', 'TEG_MTI')
+      .getMany()
+
+    const map = new Map<number, TestTemplate>()
+    for (const template of templates) {
+      map.set(template.TEG_ID, template)
+    }
+    return map
+  }
+
+  async findAllStudentTestAnswersByAltId(
+    altId: number,
+  ): Promise<Map<number, StudentTestAnswer>> {
+    const answers = await this.studentsTestsAnswersEntity
+      .createQueryBuilder('ALUNO_TESTE_RESPOSTA')
+      .select([
+        'ALUNO_TESTE_RESPOSTA.ATR_ID',
+        'ALUNO_TESTE_RESPOSTA.ATR_RESPOSTA',
+      ])
+      .leftJoin('ALUNO_TESTE_RESPOSTA.questionTemplate', 'questionTemplate')
+      .addSelect('questionTemplate.TEG_ID')
+      .where('ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = :altId', { altId })
+      .getMany()
+
+    const map = new Map<number, StudentTestAnswer>()
+    for (const answer of answers) {
+      if (answer.questionTemplate) {
+        map.set(answer.questionTemplate.TEG_ID, answer)
+      }
+    }
+    return map
   }
 
   async getCountStudentsLaunched(
@@ -660,8 +741,7 @@ export class ReleaseResultsService {
       .innerJoin('AVA_TES.TES_SER', 'TES_SER', `TES_SER.SER_ID = :serie`, {
         serie,
       })
-      .andWhere(`AVALIACAO.AVA_ID = '${idEdition}'`)
-
+      .andWhere('AVALIACAO.AVA_ID = :idEdition', { idEdition })
       .andWhere('AVM_MUN.MUN_ID = :county', { county: countyId })
       .getOne()
 
@@ -676,87 +756,77 @@ export class ReleaseResultsService {
       column,
     )
 
+    const studentIds = resultStudents.items.map((s) => s.ALU_ID)
+
     const resultTestEdition = await Promise.all(
       testByEdition?.AVA_TES?.map(async (test) => {
-        const resultTests = await this.findTestById(test.TES_ID)
+        const [
+          testInfo,
+          countStudentsLaunched,
+          resultTestTemplate,
+          answersMap,
+        ] = await Promise.all([
+          this.findTestById(test.TES_ID),
+          this.getCountStudentsLaunched(test.TES_ID, schoolId, schoolClassId),
+          this.findTestTemplate(test.TES_ID),
+          studentIds.length
+            ? this.findTestsByStudentBatch(test.TES_ID, studentIds)
+            : Promise.resolve(new Map<number, any[]>()),
+        ])
 
-        const countStudentsLaunched = await this.getCountStudentsLaunched(
-          test.TES_ID,
-          schoolId,
-          schoolClassId,
-        )
+        const students = resultStudents.items
+          .map((student) => {
+            const answers = answersMap.get(student.ALU_ID) || []
+            const verify =
+              !answers[0]?.TUR_ID || answers[0]?.TUR_ID === schoolClassId
 
-        const resultTestsStudents = await resultTests.map(async (item) => {
-          const resultTestTemplate = await this.findTestTemplate(test.TES_ID)
+            return {
+              ALU_ID: student.ALU_ID,
+              ALU_NOME: student.ALU_NOME,
+              ALU_INEP: student.ALU_INEP,
+              ALU_AVATAR: student.ALU_AVATAR,
+              ALU_TUR: {
+                TUR_NOME: student.TUR_NOME,
+                TUR_PERIODO: student.TUR_PERIODO,
+              },
+              ALU_MUN: {
+                MUN_NOME: student.MUN_NOME,
+              },
+              ALU_ESC: {
+                ESC_NOME: student.ESC_NOME,
+              },
+              ALU_SER: {
+                SER_NOME: student.SER_NOME,
+              },
+              answers,
+              verify,
+              template: resultTestTemplate,
+            }
+          })
+          .filter((student) => student.verify)
 
-          const resultStudentsMapper = resultStudents.items.map(
-            async (student) => {
-              let verify = true
-              const resultTestStudent = await this.findTestsByStudent(
-                test.TES_ID,
-                student.ALU_ID,
-              )
+        const subject = {
+          ...testInfo[0],
+          students,
+          total: {
+            students: resultStudents.meta.totalItems,
+            finished: countStudentsLaunched,
+            percentageFinished:
+              resultStudents.meta.totalItems > 0
+                ? `${Math.round(
+                    (countStudentsLaunched / resultStudents.meta.totalItems) *
+                      100,
+                  )}%`
+                : '0%',
+          },
+        }
 
-              const answers = await Promise.all(resultTestStudent)
-
-              if (
-                !!answers[0]?.TUR_ID &&
-                answers[0]?.TUR_ID !== schoolClassId
-              ) {
-                verify = false
-              }
-              return {
-                ALU_ID: student.ALU_ID,
-                ALU_NOME: student.ALU_NOME,
-                ALU_INEP: student.ALU_INEP,
-                ALU_AVATAR: student.ALU_AVATAR,
-                ALU_TUR: {
-                  TUR_NOME: student.TUR_NOME,
-                  TUR_PERIODO: student.TUR_PERIODO,
-                },
-                ALU_MUN: {
-                  MUN_NOME: student.MUN_NOME,
-                },
-                ALU_ESC: {
-                  ESC_NOME: student.ESC_NOME,
-                },
-                ALU_SER: {
-                  SER_NOME: student.SER_NOME,
-                },
-                answers,
-                verify,
-                template: resultTestTemplate,
-              }
-            },
-          )
-          const students = await Promise.all(resultStudentsMapper)
-          const filterStudents = students.filter((student) => student.verify)
-
-          item = {
-            ...item,
-            students: filterStudents,
-            total: {
-              students: resultStudents.meta.totalItems,
-              finished: countStudentsLaunched,
-              percentageFinished:
-                resultStudents.meta.totalItems > 0
-                  ? `${Math.round(
-                      (countStudentsLaunched / resultStudents.meta.totalItems) *
-                        100,
-                    )}%`
-                  : '0%',
-            },
-          } as any
-          return item
-        })
-
-        test = {
+        return {
           AVA_NOME: testByEdition.AVA_NOME,
           AVM_DT_FIM: testByEdition.AVA_AVM[0].AVM_DT_FIM,
           AVM_DT_INICIO: testByEdition.AVA_AVM[0].AVM_DT_INICIO,
-          subjects: await Promise.all(resultTestsStudents),
-        } as any
-        return test
+          subjects: [subject],
+        }
       }),
     )
 
@@ -768,7 +838,8 @@ export class ReleaseResultsService {
       .createQueryBuilder('ALUNO_TESTE')
       .select(['ALUNO_TESTE.ALT_ID'])
       .where(
-        `ALUNO_TESTE.ALT_ALU_ID = ${idStudent} AND ALUNO_TESTE.ALT_TES_ID = ${idTest}`,
+        'ALUNO_TESTE.ALT_ALU_ID = :idStudent AND ALUNO_TESTE.ALT_TES_ID = :idTest',
+        { idStudent, idTest },
       )
       .getOne()
   }
@@ -781,7 +852,7 @@ export class ReleaseResultsService {
         'ALUNO_TESTE_RESPOSTA.ATR_RESPOSTA',
       ])
       .leftJoin('ALUNO_TESTE_RESPOSTA.questionTemplate', 'questionTemplate')
-      .where(`ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = '${idAlt}'`)
+      .where('ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = :idAlt', { idAlt })
       .andWhere('questionTemplate.TEG_ID = :idTeg', { idTeg })
       .getOne()
   }
@@ -790,7 +861,7 @@ export class ReleaseResultsService {
     return this.studentsTestsAnswersEntity
       .createQueryBuilder('ALUNO_TESTE_RESPOSTA')
       .select(['ALUNO_TESTE_RESPOSTA.ATR_ID'])
-      .where(`ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = '${idAlt}'`)
+      .where('ALUNO_TESTE_RESPOSTA.ATR_ALT_ID = :idAlt', { idAlt })
       .getOne()
   }
 
@@ -905,41 +976,56 @@ export class ReleaseResultsService {
       })
     }
 
+    const idTest = String(saveStudentTest.ALT_TES)
+    const { ALT_ID } = createdStudentTest
+
+    const [questionsMap, existingAnswersMap] = await Promise.all([
+      this.findQuestionTemplatesByTest(idTest),
+      this.findAllStudentTestAnswersByAltId(ALT_ID),
+    ])
+
+    const toInsert: Partial<StudentTestAnswer>[] = []
+    const toUpdate: Partial<StudentTestAnswer>[] = []
+
     for (const answer of ALT_RESPOSTAS) {
-      const atrAlt = JSON.parse(JSON.stringify(createdStudentTest))
-      delete atrAlt.ALT_RESPOSTAS
-      answer.ATR_ALT = atrAlt
-      const idTeg = answer?.ATR_TEG
-      const idTest = JSON.parse(JSON.stringify(saveStudentTest.ALT_TES))
+      const idTeg = +answer?.ATR_TEG
+      const question = questionsMap.get(idTeg)
+      const existingAnswer = existingAnswersMap.get(idTeg)
 
-      const question = await this.findQuestionTemplate(idTest, +idTeg)
-
-      const formattedAnswer = {
+      const formattedAnswer: Partial<StudentTestAnswer> = {
         ...answer,
         ATR_ALT: createdStudentTest,
         questionTemplate: question,
         ATR_MTI: question?.TEG_MTI,
         ATR_CERTO:
-          question &&
-          answer.ATR_RESPOSTA.toUpperCase() ===
-            question.TEG_RESPOSTA_CORRETA.toUpperCase(),
+          !!question &&
+          answer?.ATR_RESPOSTA?.toUpperCase() ===
+            question?.TEG_RESPOSTA_CORRETA?.toUpperCase(),
       }
-
-      const { ALT_ID } = atrAlt
-
-      const existingAnswer = await this.findStudentTestsAnswersExisting(
-        +idTeg,
-        ALT_ID,
-      )
 
       if (existingAnswer) {
-        await queryRunner.manager.save(StudentTestAnswer, {
-          ...formattedAnswer,
-          ATR_ID: existingAnswer.ATR_ID,
-        })
+        formattedAnswer.ATR_ID = existingAnswer.ATR_ID
+        toUpdate.push(formattedAnswer)
       } else {
-        await queryRunner.manager.save(StudentTestAnswer, formattedAnswer)
+        toInsert.push(formattedAnswer)
       }
+    }
+
+    if (toInsert.length) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(StudentTestAnswer)
+        .values(toInsert)
+        .execute()
+    }
+
+    if (toUpdate.length) {
+      await Promise.all(
+        toUpdate.map((answer) =>
+          queryRunner.manager.save(StudentTestAnswer, answer),
+        ),
+      )
     }
   }
 
@@ -957,12 +1043,18 @@ export class ReleaseResultsService {
       ATR_ALT: { ALT_ID: createdStudentTest.ALT_ID },
     })
 
-    for (const answer of ALT_RESPOSTAS) {
-      const atrAlt = JSON.parse(JSON.stringify(createdStudentTest))
-      delete atrAlt.ALT_RESPOSTAS
-      answer.ATR_ALT = atrAlt
+    const answersToInsert = ALT_RESPOSTAS.map((answer) => ({
+      ...answer,
+      ATR_ALT: createdStudentTest,
+    }))
 
-      await queryRunner.manager.save(StudentTestAnswer, answer)
+    if (answersToInsert.length) {
+      await queryRunner.manager
+        .createQueryBuilder()
+        .insert()
+        .into(StudentTestAnswer)
+        .values(answersToInsert)
+        .execute()
     }
   }
 }

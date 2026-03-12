@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -10,16 +11,21 @@ import {
 
 import { TutorMessage } from './tutor-message.entity'
 
-export enum StatusSendTutorMessage {
+export enum SendTutorMessageStatus {
   PENDENTE = 'PENDENTE',
+  PENDENTE_JANELA = 'PENDENTE_JANELA',
   NAO_ENVIADO = 'NAO_ENVIADO',
   ENTREGUE = 'ENTREGUE',
   ENVIADO = 'ENVIADO',
   FALHOU = 'FALHOU',
+  USUARIO_RECUSOU = 'USUARIO_RECUSOU',
 }
 
 @Entity({
   name: 'envios_tutor_mensagens',
+})
+@Index(['studentId', 'statusWhatsapp'], {
+  unique: false,
 })
 export class SendTutorMessage {
   @PrimaryGeneratedColumn('increment', { type: 'mediumint' })
@@ -27,17 +33,17 @@ export class SendTutorMessage {
 
   @Column({
     type: 'enum',
-    enum: StatusSendTutorMessage,
-    default: StatusSendTutorMessage.PENDENTE,
+    enum: SendTutorMessageStatus,
+    default: SendTutorMessageStatus.PENDENTE,
   })
-  statusEmail: StatusSendTutorMessage
+  statusEmail: SendTutorMessageStatus
 
   @Column({
     type: 'enum',
-    enum: StatusSendTutorMessage,
-    default: StatusSendTutorMessage.PENDENTE,
+    enum: SendTutorMessageStatus,
+    default: SendTutorMessageStatus.PENDENTE,
   })
-  statusWhatsapp: StatusSendTutorMessage
+  statusWhatsapp: SendTutorMessageStatus
 
   @Column({ type: 'int', nullable: false })
   studentId: number

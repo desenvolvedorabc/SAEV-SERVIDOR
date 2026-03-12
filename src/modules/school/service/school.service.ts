@@ -93,8 +93,16 @@ export class SchoolService {
       })
     }
 
-    if (typeSchool) {
-      queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', { typeSchool })
+    const effectiveTypeSchool =
+      typeSchool ??
+      (user?.USU_SPE?.role === RoleProfile.ESTADO
+        ? TypeSchoolEnum.ESTADUAL
+        : null)
+
+    if (effectiveTypeSchool) {
+      queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
+        typeSchool: effectiveTypeSchool,
+      })
     }
 
     if (county) {
@@ -262,17 +270,13 @@ export class SchoolService {
   }
 
   async findByTransfer(params: PaginationParams, user: User) {
-    const {
-      page,
-      limit,
-      active,
-      search,
-      stateId,
-      county,
-      typeSchool,
-      verifyProfileForState,
-      isCsv,
-    } = formatParamsByProfile(params, user, true)
+    const { typeSchool, isDestination } = params
+    const { page, limit, active, search, isCsv } = formatParamsByProfile(
+      params,
+      user,
+      true,
+      true,
+    )
     const queryBuilder = this.schoolRepository
       .createQueryBuilder('School')
       .select([
@@ -280,19 +284,61 @@ export class SchoolService {
         'School.ESC_NOME',
         'School.ESC_TIPO',
         'School.ESC_UF',
+        'county.MUN_ID',
         'county.MUN_NOME',
+        'county.MUN_UF',
+        'state.id',
+        'state.name',
       ])
       .innerJoin('School.ESC_MUN', 'county')
+      .innerJoin('county.state', 'state')
       .orderBy('School.ESC_NOME', 'ASC')
 
-    if (county) {
-      queryBuilder.andWhere('School.ESC_MUN = :county', {
-        county,
+    const userRole = user?.USU_SPE?.role
+
+    if (typeSchool) {
+      queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
+        typeSchool,
       })
-    } else if (stateId) {
-      queryBuilder.andWhere('county.stateId = :stateId', {
-        stateId,
+    } else if (!isDestination && userRole === RoleProfile.ESTADO) {
+      queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
+        typeSchool: TypeSchoolEnum.ESTADUAL,
       })
+    }
+
+    if ([RoleProfile.ESCOLA].includes(userRole)) {
+      queryBuilder.andWhere('county.MUN_ID = :countyId', {
+        countyId: user?.USU_MUN?.MUN_ID,
+      })
+    }
+
+    if (isDestination) {
+      if (userRole === RoleProfile.ESCOLA) {
+        queryBuilder.andWhere('county.MUN_ID = :countyId', {
+          countyId: user?.USU_MUN?.MUN_ID,
+        })
+        queryBuilder.andWhere('School.ESC_ID = :schoolId', {
+          schoolId: user?.USU_ESC?.ESC_ID,
+        })
+      } else if (userRole === RoleProfile.MUNICIPIO_MUNICIPAL) {
+        queryBuilder.andWhere('county.MUN_ID = :countyId', {
+          countyId: user?.USU_MUN?.MUN_ID,
+        })
+        queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
+          typeSchool: TypeSchoolEnum.MUNICIPAL,
+        })
+      } else if (userRole === RoleProfile.MUNICIPIO_ESTADUAL) {
+        queryBuilder.andWhere('county.MUN_ID = :countyId', {
+          countyId: user?.USU_MUN?.MUN_ID,
+        })
+        queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
+          typeSchool: TypeSchoolEnum.ESTADUAL,
+        })
+      } else if (userRole === RoleProfile.ESTADO) {
+        queryBuilder.andWhere('county.stateId = :stateId', {
+          stateId: user?.stateId,
+        })
+      }
     }
 
     if (active !== null) {
@@ -303,22 +349,6 @@ export class SchoolService {
       queryBuilder.andWhere('School.ESC_NOME like :search', {
         search: `%${search}%`,
       })
-    }
-
-    if (
-      [RoleProfile.ESCOLA, RoleProfile.MUNICIPIO_MUNICIPAL]?.includes(
-        user?.USU_SPE?.role,
-      )
-    ) {
-      queryBuilder.andWhere('School.ESC_TIPO = :typeSchool', {
-        typeSchool,
-      })
-    }
-
-    if (verifyProfileForState) {
-      queryBuilder.andWhere(
-        `((School.ESC_TIPO = '${TypeSchoolEnum.ESTADUAL}') or (School.ESC_TIPO = '${TypeSchoolEnum.MUNICIPAL}' && county.MUN_COMPARTILHAR_DADOS IS TRUE))`,
-      )
     }
 
     return await paginateData(page, limit, queryBuilder, isCsv)

@@ -116,7 +116,12 @@ export class CountiesService {
   }
 
   async getCountiesReport(paginateParams: PaginationParams, user: User) {
-    const { typeSchool } = formatParamsByProfile(paginateParams, user, true)
+    const { typeSchool: rawTypeSchool } = formatParamsByProfile(paginateParams, user, true)
+    const typeSchool =
+      rawTypeSchool ??
+      (user?.USU_SPE?.role === RoleProfile.ESTADO
+        ? TypeSchoolEnum.ESTADUAL
+        : undefined)
 
     const data = await this.paginate(paginateParams, user)
 
@@ -185,7 +190,11 @@ export class CountiesService {
   async findOneReport(id: number, user: User) {
     const county = await this.findOne(id)
 
-    const type = typeSchoolForRole[user?.USU_SPE?.role]
+    const type =
+      typeSchoolForRole[user?.USU_SPE?.role] ??
+      (user?.USU_SPE?.role === RoleProfile.ESTADO
+        ? TypeSchoolEnum.ESTADUAL
+        : undefined)
 
     const totalTeachers = await this.connection
       .getRepository(Teacher)

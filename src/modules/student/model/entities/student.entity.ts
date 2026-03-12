@@ -1,3 +1,4 @@
+import { AutomaticNotificationSend } from 'src/modules/automatic-notifications/entities/automatic-notification-send.entity'
 import { StudentTest } from 'src/modules/release-results/model/entities/student-test.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { SchoolAbsence } from 'src/modules/school-absences/model/entities/school-absences.entity'
@@ -7,6 +8,7 @@ import { Serie } from 'src/modules/serie/model/entities/serie.entity'
 import { Gender } from 'src/modules/teacher/model/entities/gender.entity'
 import { Skin } from 'src/modules/teacher/model/entities/skin.entity'
 import { SendTutorMessage } from 'src/modules/tutor-messages/entities/send-tutor-message.entity'
+import { WhatsAppConversationWindow } from 'src/modules/twilio/entities/whatsapp-conversation-window.entity'
 import { Pcd } from 'src/shared/model/entities/pcd.entity'
 import {
   Column,
@@ -221,6 +223,18 @@ export class Student {
   )
   sendTutorMessages: SendTutorMessage[]
 
+  @OneToMany(
+    () => AutomaticNotificationSend,
+    (automaticNotificationSend) => automaticNotificationSend.student,
+  )
+  automaticNotifications: AutomaticNotificationSend[]
+
   @OneToMany(() => SchoolAbsence, (absences) => absences.IFR_ALU)
   SCHOOL_ABSENCES: SchoolAbsence[]
+
+  @OneToMany(
+    () => WhatsAppConversationWindow,
+    (conversationWindow) => conversationWindow.student,
+  )
+  whatsappConversationWindows: WhatsAppConversationWindow[]
 }

@@ -6,12 +6,14 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { isPast } from 'date-fns'
+import { isPast, subDays } from 'date-fns'
 import { paginateRaw, Pagination } from 'nestjs-typeorm-paginate'
 import { PaginationParams } from 'src/helpers/params'
 import { County } from 'src/modules/counties/model/entities/county.entity'
+import { NotificationsService } from 'src/modules/notifications/service/notification.service'
 import { Test } from 'src/modules/test/model/entities/test.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
+import { RoleProfile } from 'src/shared/enums/role.enum'
 import { InternalServerError } from 'src/utils/errors'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
 import { paginateData } from 'src/utils/paginate-data'
@@ -23,6 +25,7 @@ import { CreateAssessmentDto } from '../model/dto/create-assessment.dto'
 import { UpdateAssessmentDto } from '../model/dto/update-assessment.dto'
 import { Assessment } from '../model/entities/assessment.entity'
 import { AssessmentCounty } from '../model/entities/assessment-county.entity'
+import { EditionTypeEnum } from '../model/enum/edition-type.enum'
 import { TypeAssessmentEnum } from '../model/enum/type-assessment.enum'
 
 @Injectable()
@@ -36,6 +39,9 @@ export class AssessmentsService {
     private countyRepository: Repository<County>,
     @InjectRepository(Test)
     private testsRepository: Repository<Test>,
+    private notificationsService: NotificationsService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async findByReleaseResults(params: PaginationParams, user: User) {
@@ -73,35 +79,82 @@ export class AssessmentsService {
 
   @Transactional()
   async add(createAssessmentDto: CreateAssessmentDto, user: User) {
-    const counties = createAssessmentDto.AVA_AVM as any
+    const counties = createAssessmentDto.AVA_AVM || []
 
-    for (const county of counties) {
-      const { assessmentCounty } = await this.verifyExistsAssessmentCounty({
-        countyId: county.id,
-        assessmentId: null,
-        dateInitial: county.AVM_DT_INICIO,
-        dateFinal: county.AVM_DT_FIM,
-        type: county.AVM_TIPO,
-      })
+    await this.assessmentExists(createAssessmentDto)
 
-      if (assessmentCounty) {
-        throw new ForbiddenException(
-          `Já existe uma avaliação nesse período pro município de ${county.AVM_MUN_NOME}.`,
+    if (createAssessmentDto.AVA_DT_INICIO && createAssessmentDto.AVA_DT_FIM) {
+      const editionStart = new Date(createAssessmentDto.AVA_DT_INICIO)
+      const editionEnd = new Date(createAssessmentDto.AVA_DT_FIM)
+
+      if (editionStart >= editionEnd) {
+        throw new BadRequestException(
+          'A data de início deve ser menor que a data de fim da edição.',
+        )
+      }
+
+      if (isPast(editionEnd)) {
+        throw new BadRequestException(
+          'A data de fim da edição não pode estar no passado.',
         )
       }
     }
 
-    await this.assessmentExists(createAssessmentDto)
+    for (const county of counties) {
+      if (county?.AVM_DT_INICIO && county?.AVM_DT_FIM) {
+        const countyEntity = await this.countyRepository.findOne({
+          where: { MUN_ID: county.id },
+        })
+
+        const { assessmentCounty } = await this.verifyExistsAssessmentCounty({
+          countyId: county.id,
+          assessmentId: null,
+          dateInitial: county.AVM_DT_INICIO,
+          dateFinal: county.AVM_DT_FIM,
+          type: county.AVM_TIPO,
+        })
+
+        if (assessmentCounty) {
+          throw new ForbiddenException(
+            `Já existe uma avaliação nesse período para o município de ${countyEntity?.MUN_NOME || county.id}.`,
+          )
+        }
+      }
+    }
 
     try {
       const createAssessment = await this.assessmentRepository.save(
-        createAssessmentDto,
+        {
+          AVA_NOME: createAssessmentDto.AVA_NOME,
+          AVA_ANO: createAssessmentDto.AVA_ANO,
+          AVA_ATIVO: createAssessmentDto.AVA_ATIVO,
+          AVA_DT_INICIO: createAssessmentDto.AVA_DT_INICIO,
+          AVA_DT_FIM: createAssessmentDto.AVA_DT_FIM,
+          AVA_TIPO: createAssessmentDto.AVA_TIPO,
+          AVA_TES: createAssessmentDto.AVA_TES,
+        },
         {
           data: user,
         },
       )
 
-      this.saveItems(createAssessment)
+      if (counties.length > 0) {
+        await this.associateCountiesToAssessment(
+          createAssessment,
+          counties,
+          user,
+        )
+      }
+
+      if (createAssessment.AVA_TIPO === EditionTypeEnum.GERAL) {
+        this.notifyAllCountiesAboutNewAssessment()
+      } else if (
+        createAssessment.AVA_TIPO === EditionTypeEnum.ESPECIFICO &&
+        counties.length > 0
+      ) {
+        this.notifySpecificCountiesAboutNewAssessment(counties)
+      }
+
       return createAssessment
     } catch (e) {
       throw new InternalServerError()
@@ -115,29 +168,35 @@ export class AssessmentsService {
     user: User,
   ): Promise<Assessment> {
     const assessment = await this.findOne(id)
-    const counties = updateAssessmentDto.AVA_AVM as any
+
+    const counties = updateAssessmentDto.AVA_AVM || []
+
+    if (updateAssessmentDto.AVA_DT_INICIO && updateAssessmentDto.AVA_DT_FIM) {
+      const editionStart = new Date(updateAssessmentDto.AVA_DT_INICIO)
+      const editionEnd = new Date(updateAssessmentDto.AVA_DT_FIM)
+
+      if (editionStart >= editionEnd) {
+        throw new BadRequestException(
+          'A data de início deve ser menor que a data de fim da edição.',
+        )
+      }
+
+      if (isPast(editionEnd)) {
+        throw new BadRequestException(
+          'A data de fim da edição não pode estar no passado.',
+        )
+      }
+    }
 
     for (const county of counties) {
-      const findAssessmentCounty = await this.assessmentCountiesRepository
-        .createQueryBuilder('AssessmentCounty')
-        .where('AssessmentCounty.AVM_MUN = :countyId', { countyId: county.id })
-        .where('AssessmentCounty.AVM_TIPO = :type', { type: county?.AVM_TIPO })
-        .andWhere('AssessmentCounty.AVM_AVA = :assessmentId', {
-          assessmentId: assessment.AVA_ID,
+      if (county?.AVM_DT_INICIO && county?.AVM_DT_FIM) {
+        const countyEntity = await this.countyRepository.findOne({
+          where: { MUN_ID: county.id },
         })
-        .getOne()
 
-      if (
-        findAssessmentCounty?.AVM_DT_FIM?.toLocaleDateString() !==
-          new Date(county.AVM_DT_FIM).toLocaleDateString() ||
-        findAssessmentCounty?.AVM_DT_DISPONIVEL?.toLocaleDateString() !==
-          new Date(county.AVM_DT_DISPONIVEL).toLocaleDateString() ||
-        findAssessmentCounty?.AVM_DT_INICIO?.toLocaleDateString() !==
-          new Date(county.AVM_DT_INICIO).toLocaleDateString()
-      ) {
         const { assessmentCounty } = await this.verifyExistsAssessmentCounty({
           countyId: county.id,
-          assessmentId: assessment.AVA_ID,
+          assessmentId: id,
           dateInitial: county.AVM_DT_INICIO,
           dateFinal: county.AVM_DT_FIM,
           type: county.AVM_TIPO,
@@ -145,33 +204,40 @@ export class AssessmentsService {
 
         if (assessmentCounty) {
           throw new ForbiddenException(
-            `Já existe uma avaliação nesse período pro município de ${county.AVM_MUN_NOME}.`,
+            `Já existe uma avaliação nesse período para o município de ${countyEntity?.MUN_NOME || county.id}.`,
           )
         }
       }
     }
 
     try {
-      return this.assessmentRepository
-        .save(
-          { ...updateAssessmentDto, AVA_ID: assessment.AVA_ID },
-          {
-            data: user,
-          },
+      const updated = await this.assessmentRepository.save(
+        {
+          ...assessment,
+          ...updateAssessmentDto,
+          AVA_ID: assessment.AVA_ID,
+        },
+        {
+          data: user,
+        },
+      )
+
+      if (counties.length > 0) {
+        const newCounties = counties.filter(
+          (county) => !county.assessmentCountyId,
         )
-        .then((updateAssessment: Assessment) => {
-          updateAssessment = {
-            ...updateAssessment,
-            AVA_AVM: counties,
-          }
-          if (
-            !!updateAssessment?.AVA_AVM?.length &&
-            this.saveItems(updateAssessment)
-          ) {
-            return updateAssessment
-          }
-          return updateAssessment
-        })
+
+        await this.associateCountiesToAssessment(updated, counties, user)
+
+        if (
+          newCounties.length > 0 &&
+          updated.AVA_TIPO === EditionTypeEnum.ESPECIFICO
+        ) {
+          this.notifySpecificCountiesAboutNewAssessment(newCounties)
+        }
+      }
+
+      return updated
     } catch (e) {
       throw new InternalServerError()
     }
@@ -301,6 +367,60 @@ export class AssessmentsService {
     return {
       ...data,
       items: formattedData,
+    }
+  }
+
+  private async associateCountiesToAssessment(
+    assessment: Assessment,
+    counties: Array<{
+      id: number
+      AVM_TIPO: TypeAssessmentEnum
+      AVM_DT_INICIO?: Date
+      AVM_DT_FIM?: Date
+      AVM_DT_DISPONIVEL?: Date
+    }>,
+    user: User,
+  ): Promise<void> {
+    for (const countyDto of counties) {
+      const county = await this.countyRepository.findOne({
+        where: { MUN_ID: countyDto.id },
+      })
+
+      if (!county) {
+        throw new NotFoundException(
+          `Município com ID ${countyDto.id} não encontrado.`,
+        )
+      }
+
+      const existingAssessmentCounty =
+        await this.assessmentCountiesRepository.findOne({
+          where: {
+            AVM_MUN: { MUN_ID: countyDto.id },
+            AVM_AVA: { AVA_ID: assessment.AVA_ID },
+            AVM_TIPO: countyDto.AVM_TIPO,
+          },
+        })
+
+      const assessmentCounty = existingAssessmentCounty
+        ? {
+          ...existingAssessmentCounty,
+          AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
+          AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
+          AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
+        }
+        : this.assessmentCountiesRepository.create({
+          AVM_AVA: assessment,
+          AVM_MUN: county,
+          AVM_TIPO: countyDto.AVM_TIPO,
+          AVM_ATIVO: true,
+          AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
+          AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
+          AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
+        })
+
+      await this.assessmentCountiesRepository.save(assessmentCounty, {
+        data: user,
+      })
     }
   }
 
@@ -450,7 +570,6 @@ export class AssessmentsService {
     dateFinal: Date
     type: TypeAssessmentEnum
   }) {
-    // TO-DO: Validar pelo tipo
     const queryBuilder = await this.assessmentCountiesRepository
       .createQueryBuilder('AssessmentCounty')
       .innerJoin('AssessmentCounty.AVM_MUN', 'AVM_MUN')
@@ -475,6 +594,343 @@ export class AssessmentsService {
 
     return {
       assessmentCounty,
+    }
+  }
+
+  async getAvailableAssessmentsForCounty(
+    { page, limit, year }: PaginationParams,
+    user: User,
+  ) {
+    const countyId = user?.USU_MUN?.MUN_ID
+    const role = user?.USU_SPE?.role
+    const typeAssessment =
+      role === RoleProfile.MUNICIPIO_ESTADUAL
+        ? TypeAssessmentEnum.ESTADUAL
+        : TypeAssessmentEnum.MUNICIPAL
+
+    const queryBuilder = this.assessmentRepository
+      .createQueryBuilder('Assessment')
+      .select([
+        'Assessment.AVA_ID as AVA_ID',
+        'Assessment.AVA_NOME as AVA_NOME',
+        'Assessment.AVA_ANO as AVA_ANO',
+        'Assessment.AVA_TIPO as AVA_TIPO',
+      ])
+      .leftJoin(
+        'Assessment.AVA_AVM',
+        'AVA_AVM',
+        '(AVA_AVM.AVM_MUN_ID = :countyId and AVA_AVM.AVM_TIPO = :typeAssessment)',
+        {
+          countyId,
+          typeAssessment,
+        },
+      )
+      .where('Assessment.AVA_ATIVO IS TRUE')
+      .andWhere(
+        '(Assessment.AVA_TIPO = :geralType OR (Assessment.AVA_TIPO = :especificoType AND AVA_AVM.AVM_ID IS NOT NULL))',
+        {
+          geralType: EditionTypeEnum.GERAL,
+          especificoType: EditionTypeEnum.ESPECIFICO,
+        },
+      )
+
+    if (year) {
+      queryBuilder.andWhere('Assessment.AVA_ANO = :year', { year })
+    }
+
+    queryBuilder.orderBy('Assessment.AVA_DT_CRIACAO', 'DESC')
+
+    return paginateRaw(queryBuilder, { page, limit })
+  }
+
+  async getAssessmentForCounty(assessmentId: number, user: User) {
+    const countyId = user?.USU_MUN?.MUN_ID
+    const role = user?.USU_SPE?.role
+    const typeAssessment =
+      role === RoleProfile.MUNICIPIO_ESTADUAL
+        ? TypeAssessmentEnum.ESTADUAL
+        : TypeAssessmentEnum.MUNICIPAL
+
+    const assessment = await this.assessmentRepository.findOne({
+      where: { AVA_ID: assessmentId },
+      relations: ['AVA_TES', 'AVA_TES.TES_SER', 'AVA_TES.TES_DIS'],
+    })
+
+    if (!assessment) {
+      throw new NotFoundException('Avaliação não encontrada.')
+    }
+
+    if (assessment.AVA_TIPO === EditionTypeEnum.ESPECIFICO) {
+      const countyAssessment = await this.assessmentCountiesRepository.findOne({
+        where: {
+          AVM_TIPO: typeAssessment,
+          AVM_AVA: { AVA_ID: assessmentId },
+          AVM_MUN: { MUN_ID: countyId },
+        },
+        relations: ['AVM_MUN'],
+      })
+
+      if (!countyAssessment) {
+        throw new ForbiddenException(
+          'Este município não está autorizado a acessar esta avaliação específica.',
+        )
+      }
+    }
+
+    const countyAssessment = await this.assessmentCountiesRepository.findOne({
+      where: {
+        AVM_TIPO: typeAssessment,
+        AVM_AVA: { AVA_ID: assessmentId },
+        AVM_MUN: { MUN_ID: countyId },
+      },
+      relations: ['AVM_MUN'],
+    })
+
+    if (!countyAssessment && assessment.AVA_TIPO === EditionTypeEnum.GERAL) {
+      const county = await this.countyRepository.findOne({
+        where: { MUN_ID: countyId },
+      })
+
+      return {
+        assessment: {
+          AVA_ID: assessment.AVA_ID,
+          AVA_NOME: assessment.AVA_NOME,
+          AVA_ANO: assessment.AVA_ANO,
+          AVA_DT_INICIO: assessment.AVA_DT_INICIO,
+          AVA_DT_FIM: assessment.AVA_DT_FIM,
+          AVA_TIPO: assessment.AVA_TIPO,
+        },
+        county: {
+          MUN_ID: county?.MUN_ID,
+          MUN_NOME: county?.MUN_NOME,
+          AVM_ID: null,
+          AVM_TIPO: typeAssessment,
+          AVM_DT_INICIO: null,
+          AVM_DT_FIM: null,
+          AVM_DT_DISPONIVEL: null,
+        },
+        tests: assessment.AVA_TES?.map((test) => ({
+          TES_ID: test.TES_ID,
+          TES_NOME: test.TES_NOME,
+          TES_ANO: test.TES_SER,
+          subject: test.TES_DIS.DIS_NOME,
+        })),
+      }
+    }
+
+    return {
+      assessment: {
+        AVA_ID: assessment.AVA_ID,
+        AVA_NOME: assessment.AVA_NOME,
+        AVA_ANO: assessment.AVA_ANO,
+        AVA_DT_INICIO: assessment.AVA_DT_INICIO,
+        AVA_DT_FIM: assessment.AVA_DT_FIM,
+        AVA_TIPO: assessment.AVA_TIPO,
+      },
+      county: {
+        MUN_ID: countyAssessment?.AVM_MUN.MUN_ID,
+        MUN_NOME: countyAssessment?.AVM_MUN.MUN_NOME,
+        AVM_ID: countyAssessment?.AVM_ID,
+        AVM_TIPO: countyAssessment?.AVM_TIPO,
+        AVM_DT_INICIO: countyAssessment.AVM_DT_INICIO,
+        AVM_DT_FIM: countyAssessment.AVM_DT_FIM,
+        AVM_DT_DISPONIVEL: countyAssessment.AVM_DT_DISPONIVEL,
+      },
+      tests: assessment.AVA_TES?.map((test) => ({
+        TES_ID: test.TES_ID,
+        TES_NOME: test.TES_NOME,
+        TES_ANO: test.TES_ANO,
+        subject: test.TES_DIS?.DIS_NOME,
+      })),
+    }
+  }
+
+  @Transactional()
+  async configureCountyPeriod(
+    assessmentId: number,
+    countyId: number,
+    dto: {
+      AVM_DT_INICIO: Date
+      AVM_DT_FIM: Date
+      AVM_DT_DISPONIVEL?: Date
+      AVM_TIPO: TypeAssessmentEnum
+    },
+    user: User,
+  ) {
+    const assessment = await this.assessmentRepository.findOne({
+      where: { AVA_ID: assessmentId },
+      relations: ['AVA_AVM', 'AVA_AVM.AVM_MUN'],
+    })
+
+    if (!assessment) {
+      throw new NotFoundException('Avaliação não encontrada.')
+    }
+
+    if (assessment.AVA_TIPO === EditionTypeEnum.ESPECIFICO) {
+      const isCountyInAssessment = assessment.AVA_AVM?.some(
+        (avm) =>
+          avm.AVM_MUN?.MUN_ID === countyId && avm.AVM_TIPO === dto.AVM_TIPO,
+      )
+
+      if (!isCountyInAssessment) {
+        throw new ForbiddenException(
+          'Este município não está autorizado a participar desta avaliação específica.',
+        )
+      }
+    }
+
+    if (assessment.AVA_DT_INICIO && assessment.AVA_DT_FIM) {
+      this.validateCountyPeriodWithinEditionPeriod(
+        new Date(dto.AVM_DT_INICIO),
+        new Date(dto.AVM_DT_FIM),
+        new Date(assessment.AVA_DT_INICIO),
+        new Date(assessment.AVA_DT_FIM),
+      )
+    }
+
+    const { assessmentCounty: existingConflict } =
+      await this.verifyExistsAssessmentCounty({
+        countyId,
+        assessmentId,
+        dateInitial: dto.AVM_DT_INICIO,
+        dateFinal: dto.AVM_DT_FIM,
+        type: dto.AVM_TIPO,
+      })
+
+    if (existingConflict) {
+      throw new ForbiddenException(
+        'Já existe uma avaliação nesse período. Por favor, escolha outro intervalo de datas.',
+      )
+    }
+
+    let assessmentCounty = await this.assessmentCountiesRepository.findOne({
+      where: {
+        AVM_MUN: { MUN_ID: countyId },
+        AVM_AVA: { AVA_ID: assessmentId },
+        AVM_TIPO: dto.AVM_TIPO,
+      },
+    })
+
+    const county = await this.countyRepository.findOne({
+      where: { MUN_ID: countyId },
+    })
+
+    if (!county) {
+      throw new NotFoundException('Município não encontrado.')
+    }
+
+    const calculatedAvailabilityDate = subDays(new Date(dto.AVM_DT_INICIO), 7)
+
+    if (assessmentCounty) {
+      assessmentCounty.AVM_DT_INICIO = dto.AVM_DT_INICIO
+      assessmentCounty.AVM_DT_FIM = dto.AVM_DT_FIM
+      assessmentCounty.AVM_DT_DISPONIVEL = calculatedAvailabilityDate
+    } else {
+      assessmentCounty = this.assessmentCountiesRepository.create({
+        AVM_MUN: county,
+        AVM_AVA: assessment,
+        AVM_DT_INICIO: dto.AVM_DT_INICIO,
+        AVM_DT_FIM: dto.AVM_DT_FIM,
+        AVM_DT_DISPONIVEL: calculatedAvailabilityDate,
+        AVM_TIPO: dto.AVM_TIPO,
+        AVM_ATIVO: true,
+      })
+    }
+
+    try {
+      return await this.assessmentCountiesRepository.save(assessmentCounty, {
+        data: user,
+      })
+    } catch (e) {
+      throw new InternalServerError()
+    }
+  }
+
+  private async notifyAllCountiesAboutNewAssessment(): Promise<void> {
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.USU_ID as USU_ID'])
+      .innerJoin('user.USU_SPE', 'USU_SPE')
+      .innerJoin('user.USU_MUN', 'USU_MUN', 'USU_MUN.MUN_ATIVO IS TRUE')
+      .where('user.USU_ATIVO IS TRUE', { active: true })
+      .andWhere(
+        '(USU_SPE.role = :municipalRole OR USU_SPE.role = :estadualRole)',
+        {
+          municipalRole: RoleProfile.MUNICIPIO_MUNICIPAL,
+          estadualRole: RoleProfile.MUNICIPIO_ESTADUAL,
+        },
+      )
+      .getRawMany()
+
+    if (users.length > 0) {
+      this.mapUserAndCreateNotification(users)
+    }
+  }
+
+  private async notifySpecificCountiesAboutNewAssessment(
+    counties: Array<{
+      id: number
+      AVM_TIPO: TypeAssessmentEnum
+    }>,
+  ): Promise<void> {
+    for (const county of counties) {
+      const profileName =
+        county.AVM_TIPO === TypeAssessmentEnum.MUNICIPAL
+          ? RoleProfile.MUNICIPIO_MUNICIPAL
+          : RoleProfile.MUNICIPIO_ESTADUAL
+
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .select(['user.USU_ID as USU_ID'])
+        .innerJoin('user.USU_SPE', 'USU_SPE', 'USU_SPE.role = :role', {
+          role: profileName,
+        })
+        .innerJoin('user.USU_MUN', 'USU_MUN', 'USU_MUN.MUN_ATIVO IS TRUE')
+        .where('USU_MUN.MUN_ID = :countyId', { countyId: county.id })
+        .andWhere('user.USU_ATIVO IS TRUE')
+        .getRawMany()
+
+      if (users.length > 0) {
+        this.mapUserAndCreateNotification(users)
+      }
+    }
+  }
+
+  private async mapUserAndCreateNotification(users: User[]) {
+    const title = 'Nova Avaliação Disponível'
+    const message =
+      'Você tem uma nova prova disponível no SAEV. Acesse o módulo de Edições Municipais para ver mais detalhes.'
+
+    const notifications = users.map((user) => {
+      return {
+        title,
+        message,
+        user,
+      }
+    })
+
+    this.notificationsService.createMany(notifications)
+  }
+
+  private validateCountyPeriodWithinEditionPeriod(
+    countyStart: Date,
+    countyEnd: Date,
+    editionStart: Date,
+    editionEnd: Date,
+    countyName?: string,
+  ): void {
+    const countyNameMsg = countyName ? ` do município ${countyName}` : ''
+
+    if (countyStart < editionStart || countyEnd > editionEnd) {
+      throw new BadRequestException(
+        `O período${countyNameMsg} deve estar dentro do período da edição (${editionStart.toLocaleDateString('pt-BR')} a ${editionEnd.toLocaleDateString('pt-BR')}).`,
+      )
+    }
+
+    if (countyStart >= countyEnd) {
+      throw new BadRequestException(
+        `A data de início deve ser menor que a data de fim${countyNameMsg}.`,
+      )
     }
   }
 

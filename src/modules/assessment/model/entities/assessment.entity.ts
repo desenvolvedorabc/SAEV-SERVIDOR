@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm'
 
+import { EditionTypeEnum } from '../enum/edition-type.enum'
 import { AssessmentCounty } from './assessment-county.entity'
 
 @Entity({ name: 'avaliacao' })
@@ -37,6 +38,19 @@ export class Assessment {
     default: () => '1',
   })
   AVA_ATIVO: boolean
+
+  @Column({ type: 'timestamp', nullable: true })
+  AVA_DT_INICIO: Date
+
+  @Column({ type: 'timestamp', nullable: true })
+  AVA_DT_FIM: Date
+
+  @Column({
+    type: 'enum',
+    enum: EditionTypeEnum,
+    default: EditionTypeEnum.ESPECIFICO,
+  })
+  AVA_TIPO: EditionTypeEnum
 
   @ManyToMany(() => Test, (tests) => tests.TES_ASSESMENTS)
   @JoinTable({

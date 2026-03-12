@@ -3,11 +3,13 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Put,
   Query,
   Request,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
@@ -47,6 +49,25 @@ export class TransferController {
     params: PaginationParams,
   ): Promise<Pagination<Transfer>> {
     return this.transferService.paginate(params, user)
+  }
+
+  @Post('process-notifications')
+  async processNotifications(
+    @Headers('Cron-Job-Id') cronJobId: string,
+  ): Promise<{ processed: number }> {
+    if (cronJobId !== process.env.CRON_JOB_ID) {
+      throw new UnauthorizedException()
+    }
+    return this.transferService.processNotifications()
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('pending/count')
+  async countPendingTransfers(
+    @CurrentUser() user: User,
+  ): Promise<{ hasPending: boolean; count: number }> {
+    return this.transferService.countPendingTransfersForApproval(user)
   }
 
   @UseGuards(JwtAuthGuard)

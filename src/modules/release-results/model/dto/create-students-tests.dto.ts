@@ -17,7 +17,6 @@ import { TestTemplate } from 'src/modules/test/model/entities/test-template.enti
 import { User } from 'src/modules/user/model/entities/user.entity'
 
 import { StudentTest } from '../entities/student-test.entity'
-import { StudentTestAnswer } from '../entities/student-test-answer.entity'
 
 export class CreateStudentsTestsDto {
   @ApiProperty({

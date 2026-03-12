@@ -94,7 +94,9 @@ export class SchoolYearService {
    * @returns retorna o ano letivo pesquisado
    */
   findOne(ANO_ID: number) {
-    return this.yearSchoolRepository.findOne({ ANO_ID })
+    return this.yearSchoolRepository.findOne({
+      where: { ANO_ID },
+    })
   }
 
   /**
@@ -103,15 +105,28 @@ export class SchoolYearService {
    * @param updateSchoolYearDto objeto referente a criação de ano letivo
    * @returns informa que o ano letivo foi atualizado
    */
-  update(
+  async update(
     ANO_ID: number,
     updateSchoolYearDto: UpdateSchoolYearDto,
     user: User,
   ): Promise<ISchoolYear> {
-    return this.yearSchoolRepository.save(
-      { ...updateSchoolYearDto, ANO_ID },
-      { data: user },
+    const existingYear = await this.yearSchoolRepository.findOne({
+      where: { ANO_ID },
+    })
+
+    if (!existingYear) {
+      throw new HttpException(
+        'Ano letivo não encontrado.',
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    const updatedYear = this.yearSchoolRepository.merge(
+      existingYear,
+      updateSchoolYearDto,
     )
+
+    return this.yearSchoolRepository.save(updatedYear, { data: user })
   }
 
   /**
@@ -122,7 +137,9 @@ export class SchoolYearService {
    * @returns retorna o resultado da consulta como VERDADEIRO ou FALSO
    */
   async yearSchoolExists(ANO_NOME: string): Promise<boolean> {
-    const yearSchool = await this.yearSchoolRepository.findOne({ ANO_NOME })
+    const yearSchool = await this.yearSchoolRepository.findOne({
+      where: { ANO_NOME },
+    })
     if (yearSchool) {
       return true
     } else {

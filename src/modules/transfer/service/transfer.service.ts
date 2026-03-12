@@ -5,11 +5,13 @@ import { paginateRaw, Pagination } from 'nestjs-typeorm-paginate'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { NotificationsService } from 'src/modules/notifications/service/notification.service'
+import { School } from 'src/modules/school/model/entities/school.entity'
 import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
 import { SchoolClassService } from 'src/modules/school-class/service/school-class.service'
 import { Student } from 'src/modules/student/model/entities/student.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { RoleProfile } from 'src/shared/enums/role.enum'
+import { InternalServerError } from 'src/utils/errors'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
 import { Repository } from 'typeorm'
 
@@ -30,6 +32,9 @@ export class TransferService {
 
     @InjectRepository(Assessment)
     private assessmentsRepository: Repository<Assessment>,
+
+    @InjectRepository(School)
+    private schoolRepository: Repository<School>,
 
     private notificationService: NotificationsService,
 
@@ -59,12 +64,23 @@ export class TransferService {
     approvedTransferDto: ApprovedTransferDto,
     user: User,
   ): Promise<Transfer> {
+    if (!user.USU_ESC && user.USU_SPE?.role === RoleProfile.ESCOLA) {
+      const userWithSchool = await this.userRepository.findOne({
+        where: { USU_ID: user.USU_ID },
+        relations: ['USU_ESC', 'USU_ESC.ESC_MUN'],
+      })
+      if (userWithSchool) {
+        user.USU_ESC = userWithSchool.USU_ESC
+      }
+    }
+
     let transferExist = await this.transferRepository.findOne({
       where: {
         TRF_ID,
       },
       relations: [
         'TRF_ESC_ORIGEM',
+        'TRF_ESC_ORIGEM.ESC_MUN',
         'TRF_USU_STATUS',
         'TRF_ALU',
         'TRF_ESC_DESTINO',
@@ -146,12 +162,57 @@ export class TransferService {
     createTransferDto: CreateTransferDto,
     user: User,
   ): Promise<Transfer> {
+    if (!user.USU_ESC) {
+      const userWithSchool = await this.userRepository.findOne({
+        where: { USU_ID: user.USU_ID },
+        relations: ['USU_ESC'],
+      })
+      if (userWithSchool) {
+        user.USU_ESC = userWithSchool.USU_ESC
+      }
+    }
+
+    let destinationSchoolId = createTransferDto.TRF_ESC_DESTINO as any
+
+    if (!destinationSchoolId && user.USU_ESC) {
+      destinationSchoolId = user.USU_ESC.ESC_ID
+    }
+
+    if (!destinationSchoolId) {
+      throw new ForbiddenException(
+        'Usuário não possui escola vinculada para solicitar transferência.',
+      )
+    }
+
     const student = await this.studentRepository.findOne({
       where: {
         ALU_ID: createTransferDto.TRF_ALU,
       },
       relations: ['ALU_ESC'],
     })
+
+    if (!student) {
+      throw new BadRequestException('Aluno não encontrado.')
+    }
+
+    const schoolOriginId = createTransferDto.TRF_ESC_ORIGEM as any
+
+    if (student.ALU_ESC?.ESC_ID !== schoolOriginId) {
+      throw new ForbiddenException(
+        'O aluno não pertence à escola de origem informada.',
+      )
+    }
+
+    const schoolOrigin = await this.schoolRepository.findOne({
+      where: {
+        ESC_ID: schoolOriginId,
+      },
+      relations: ['ESC_MUN'],
+    })
+
+    if (!schoolOrigin) {
+      throw new BadRequestException('Escola de origem não encontrada.')
+    }
 
     let schoolClass = null
 
@@ -161,13 +222,31 @@ export class TransferService {
       )
     }
 
-    if (
-      schoolClass?.TUR_ESC?.ESC_ID !==
-      (createTransferDto?.TRF_ESC_DESTINO as any)
-    ) {
+    if (schoolClass && schoolClass?.TUR_ESC?.ESC_ID !== destinationSchoolId) {
       throw new ForbiddenException(
-        'Turma de destino diferente da escola de destino',
+        'A turma de destino deve pertencer à sua escola.',
       )
+    }
+
+    const destinationSchool = await this.schoolRepository.findOne({
+      where: {
+        ESC_ID: destinationSchoolId,
+      },
+      relations: ['ESC_MUN'],
+    })
+
+    if (!destinationSchool) {
+      throw new BadRequestException('Escola de destino não encontrada.')
+    }
+
+    const userRole = user?.USU_SPE?.role
+
+    if (userRole === RoleProfile.ESCOLA) {
+      if (user?.USU_ESC?.ESC_ID !== destinationSchool.ESC_ID) {
+        throw new ForbiddenException(
+          'Você só pode transferir alunos para a sua própria escola.',
+        )
+      }
     }
 
     const formattedInitialDate = new Date()
@@ -207,18 +286,17 @@ export class TransferService {
       })
       .orderBy('AVALIACAO.AVA_DT_CRIACAO', 'DESC')
 
-    if (createTransferDto?.TRF_TUR_ORIGEM) {
-      const dataAssesment = await queryBuilderAssessment.getOne()
+    const dataAssesment = await queryBuilderAssessment.getOne()
 
-      if (dataAssesment) {
-        throw new BadRequestException(
-          'Esse aluno não pode ser transferido, pois está em período de avaliação.',
-        )
-      }
+    if (dataAssesment) {
+      throw new BadRequestException(
+        'Esse aluno não pode ser transferido, pois está em período de avaliação.',
+      )
     }
 
     createTransferDto = {
       ...createTransferDto,
+      TRF_ESC_DESTINO: destinationSchoolId as any,
       TRF_STATUS: TransferStatus.ABERTO,
     }
 
@@ -231,31 +309,22 @@ export class TransferService {
       { data: user },
     )
 
-    // if (transfer.TRF_ESC_DESTINO) {
-    //   const users = await this.userRepository.find({
-    //     where: {
-    //       USU_ESC: transfer.TRF_ESC_DESTINO,
-    //     },
-    //   })
+    if (
+      schoolOrigin.ESC_TIPO === destinationSchool.ESC_TIPO &&
+      schoolOrigin.ESC_MUN_ID === destinationSchool.ESC_MUN_ID
+    ) {
+      await this.update(
+        transfer.TRF_ID,
+        {
+          TRF_STATUS: TransferStatus.TAPROVADO,
+          TRF_USU_STATUS: user,
+          TRF_JUSTIFICATIVA: null,
+        },
+        user,
+      )
 
-    //   for (const user of users) {
-    //     this.notificationService.create(
-    //       'Transferência',
-    //       `Você recebeu uma solicitação de transferência de aluno para sua escola.`,
-    //       user,
-    //     )
-    //   }
-    // }
-
-    await this.update(
-      transfer.TRF_ID,
-      {
-        TRF_STATUS: 'TAPROVADO',
-        TRF_USU_STATUS: user,
-        TRF_JUSTIFICATIVA: null,
-      },
-      user,
-    )
+      return transfer
+    }
 
     return transfer
   }
@@ -370,7 +439,11 @@ export class TransferService {
       )
     }
 
-    if (verifyProfileForState) {
+    if (user?.USU_SPE?.role === RoleProfile.ESTADO) {
+      queryBuilder.andWhere('ESC_ORIGEM.ESC_TIPO = :estadual', {
+        estadual: TypeSchoolEnum.ESTADUAL,
+      })
+    } else if (verifyProfileForState) {
       queryBuilder.andWhere(
         `((ESC_ORIGEM.ESC_TIPO = :estadual OR ESC_DESTINO.ESC_TIPO = :estadual) OR
         ((ESC_ORIGEM.ESC_TIPO = :municipal OR ESC_DESTINO.ESC_TIPO = :municipal) AND
@@ -383,10 +456,22 @@ export class TransferService {
     }
 
     if (
-      [RoleProfile.ESCOLA, RoleProfile.MUNICIPIO_MUNICIPAL]?.includes(
-        user?.USU_SPE?.role,
-      )
+      [
+        RoleProfile.MUNICIPIO_ESTADUAL,
+        RoleProfile.MUNICIPIO_MUNICIPAL,
+      ]?.includes(user?.USU_SPE?.role) &&
+      user?.USU_MUN?.MUN_ID
     ) {
+      queryBuilder.andWhere(
+        `(
+          (ESC_ORIGEM.ESC_TIPO = :userTypeSchool AND MUNICIPIO_ORIGEM.MUN_ID = :userCounty) OR
+          (ESC_DESTINO.ESC_TIPO = :userTypeSchool AND MUNICIPIO_DESTINO.MUN_ID = :userCounty)
+        )`,
+        { userCounty: user.USU_MUN.MUN_ID, userTypeSchool: typeSchool },
+      )
+    }
+
+    if ([RoleProfile.ESCOLA]?.includes(user?.USU_SPE?.role)) {
       queryBuilder.andWhere(
         '(ESC_ORIGEM.ESC_TIPO = :userTypeSchool OR ESC_DESTINO.ESC_TIPO = :userTypeSchool)',
         { userTypeSchool: typeSchool },
@@ -411,15 +496,14 @@ export class TransferService {
     return paginateRaw<Transfer>(queryBuilder, {
       page,
       limit,
-      countQueries: true,
+      countQueries: false,
       metaTransformer: ({
         currentPage,
         itemCount,
         itemsPerPage,
         totalItems,
       }) => {
-        const totalPages = Math.max(Math.ceil(totalItems / itemsPerPage), 1)
-        const hasNext = currentPage < totalPages
+        const hasNext = itemCount === itemsPerPage
         const hasPrev = currentPage > 1
 
         return {
@@ -427,11 +511,187 @@ export class TransferService {
           itemCount,
           itemsPerPage,
           totalItems,
-          totalPages,
+          totalPages: currentPage + 1,
           nextPage: hasNext ? currentPage + 1 : null,
           previousPage: hasPrev ? currentPage - 1 : null,
         }
       },
     })
+  }
+
+  async countPendingTransfersForApproval(
+    user: User,
+  ): Promise<{ hasPending: boolean; count: number }> {
+    const allowedRoles = [
+      RoleProfile.ESCOLA,
+      RoleProfile.MUNICIPIO_MUNICIPAL,
+      RoleProfile.MUNICIPIO_ESTADUAL,
+    ]
+
+    const blockedRoles = [RoleProfile.SAEV, RoleProfile.ESTADO]
+
+    if (
+      !allowedRoles.includes(user?.USU_SPE?.role) ||
+      blockedRoles.includes(user?.USU_SPE?.role)
+    ) {
+      return { hasPending: false, count: 0 }
+    }
+
+    const userRole = user?.USU_SPE?.role
+
+    if (
+      userRole === RoleProfile.MUNICIPIO_MUNICIPAL ||
+      userRole === RoleProfile.MUNICIPIO_ESTADUAL
+    ) {
+      if (!user?.USU_MUN?.MUN_ID) {
+        return { hasPending: false, count: 0 }
+      }
+
+      const typeSchool =
+        userRole === RoleProfile.MUNICIPIO_MUNICIPAL
+          ? TypeSchoolEnum.MUNICIPAL
+          : TypeSchoolEnum.ESTADUAL
+
+      const count = await this.transferRepository
+        .createQueryBuilder('transfer')
+        .innerJoin('transfer.TRF_ESC_ORIGEM', 'escola')
+        .where('escola.ESC_MUN_ID = :munId', { munId: user.USU_MUN.MUN_ID })
+        .andWhere('escola.ESC_TIPO = :typeSchool', { typeSchool })
+        .andWhere('transfer.TRF_STATUS = :status', {
+          status: TransferStatus.ABERTO,
+        })
+        .getCount()
+
+      return {
+        hasPending: count > 0,
+        count,
+      }
+    }
+
+    if (!user.USU_ESC) {
+      const userWithSchool = await this.userRepository.findOne({
+        where: { USU_ID: user.USU_ID },
+        relations: ['USU_ESC'],
+      })
+      if (userWithSchool) {
+        user.USU_ESC = userWithSchool.USU_ESC
+      }
+    }
+
+    if (!user.USU_ESC) {
+      return { hasPending: false, count: 0 }
+    }
+
+    const count = await this.transferRepository.count({
+      where: {
+        TRF_ESC_ORIGEM: user.USU_ESC,
+        TRF_STATUS: TransferStatus.ABERTO,
+      },
+    })
+
+    return {
+      hasPending: count > 0,
+      count,
+    }
+  }
+
+  /**
+   * Verifica se o usuário tem permissão para aprovar/reprovar uma transferência
+   * Regra: Apenas a ORIGEM pode aprovar, exceto SAEV/Admin que pode tudo
+   */
+  private canUserApproveTransfer(user: User, transfer: Transfer): boolean {
+    const userRole = user?.USU_SPE?.role
+
+    if (userRole === RoleProfile.SAEV) {
+      return true
+    }
+
+    if (userRole === RoleProfile.ESTADO) {
+      return (
+        transfer.TRF_ESC_ORIGEM?.ESC_MUN?.stateId === user?.stateId &&
+        transfer.TRF_ESC_ORIGEM?.ESC_TIPO === TypeSchoolEnum.ESTADUAL
+      )
+    }
+
+    if (userRole === RoleProfile.MUNICIPIO_ESTADUAL) {
+      return (
+        transfer.TRF_ESC_ORIGEM?.ESC_MUN_ID === user?.USU_MUN?.MUN_ID &&
+        transfer.TRF_ESC_ORIGEM?.ESC_TIPO === TypeSchoolEnum.ESTADUAL
+      )
+    }
+
+    if (userRole === RoleProfile.MUNICIPIO_MUNICIPAL) {
+      return (
+        transfer.TRF_ESC_ORIGEM?.ESC_MUN_ID === user?.USU_MUN?.MUN_ID &&
+        transfer.TRF_ESC_ORIGEM?.ESC_TIPO === TypeSchoolEnum.MUNICIPAL
+      )
+    }
+
+    if (userRole === RoleProfile.ESCOLA) {
+      return transfer.TRF_ESC_ORIGEM?.ESC_ID === user?.USU_ESC?.ESC_ID
+    }
+
+    return false
+  }
+
+  async processNotifications(): Promise<{ processed: number }> {
+    const transfers = await this.transferRepository
+      .createQueryBuilder('t')
+      .select(['t.TRF_ID', 'escola.ESC_ID'])
+      .innerJoin('t.TRF_ESC_ORIGEM', 'escola')
+      .where('t.TRF_NOTIFICADO = :notificado', { notificado: false })
+      .andWhere('t.TRF_STATUS = :status', { status: TransferStatus.ABERTO })
+      .take(100)
+      .getMany()
+
+    if (!transfers.length) {
+      return { processed: 0 }
+    }
+
+    const ids = transfers.map((t) => t.TRF_ID)
+
+    await this.transferRepository
+      .createQueryBuilder()
+      .update(Transfer)
+      .set({ TRF_NOTIFICADO: true })
+      .whereInIds(ids)
+      .execute()
+
+    const schoolIds = [
+      ...new Set(
+        transfers.map((t) => t.TRF_ESC_ORIGEM?.ESC_ID).filter(Boolean),
+      ),
+    ]
+
+    try {
+      const users = await this.userRepository
+        .createQueryBuilder('u')
+        .select(['u.USU_ID', 'escola.ESC_ID'])
+        .innerJoin('u.USU_ESC', 'escola')
+        .where('escola.ESC_ID IN (:...schoolIds)', { schoolIds })
+        .getMany()
+
+      const allNotifications = users.map((user) => ({
+        title: 'Transferência',
+        message:
+          'Você recebeu uma nova solicitação de transferência na sua escola. Verifique ná página de transferências.',
+        user,
+      }))
+
+      if (allNotifications.length) {
+        await this.notificationService.createMany(allNotifications)
+      }
+    } catch (error) {
+      await this.transferRepository
+        .createQueryBuilder()
+        .update(Transfer)
+        .set({ TRF_NOTIFICADO: false })
+        .whereInIds(ids)
+        .execute()
+
+      throw new InternalServerError()
+    }
+
+    return { processed: transfers.length }
   }
 }

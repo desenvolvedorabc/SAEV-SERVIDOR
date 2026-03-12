@@ -67,34 +67,24 @@ export class TestsController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get(':id')
+  @Get('/:id')
   async findOne(@Param('id') id: number) {
     return this.testsService.findOne(id)
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get(':id/herby')
+  @Get('/:id/generate-data-card')
   async findTestByHerby(
     @Param('id') id: number,
     @Query() getTestHerby: GetTestHerby,
   ) {
-    return this.testsService.findOneByHerby(id, getTestHerby)
+    return this.testsService.generateCard(id, getTestHerby)
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get(':id/edler')
-  async findTestByEdler(
-    @Param('id') id: number,
-    @Query() getTestHerby: GetTestHerby,
-  ) {
-    return this.testsService.findOneByEdler(id, getTestHerby)
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @Put(':id')
+  @Put('/:id')
   update(
     @CurrentUser() user: User,
     @Param('id') id: number,
@@ -105,7 +95,7 @@ export class TestsController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Put(':id/toggle-active')
+  @Put('/:id/toggle-active')
   toggleActive(
     @CurrentUser() user: User,
     @Param('id') id: number,
@@ -124,7 +114,7 @@ export class TestsController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Post('file/upload')
+  @Post('/file/upload')
   async uploadFile(@CurrentUser() user: User, @Body() data: any) {
     const { TES_ID, filename, base64 } = data
     return this.testsService.updateFile(+TES_ID, filename, base64, user)
@@ -137,7 +127,7 @@ export class TestsController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Post('manual/upload')
+  @Post('/manual/upload')
   async uploadAvatar(@CurrentUser() user: User, @Body() data: any) {
     const { TES_ID, filename, base64 } = data
     return this.testsService.updateManual(+TES_ID, filename, base64, user)

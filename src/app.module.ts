@@ -9,10 +9,12 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import configuration from './config/configuration'
 import { DatabaseConfig } from './config/database-config.factory'
+import { AiModule } from './modules/ai/ai.module'
 import { AreaModule } from './modules/area/area.module'
 import { AssessmentsModule } from './modules/assessment/assessment.module'
 import { AssessmentOnlineModule } from './modules/assessment-online/assessment-online.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { AutomaticNotificationsModule } from './modules/automatic-notifications/automatic-notifications.module'
 import { CountiesModule } from './modules/counties/counties.module'
 import { ExternalReportsModule } from './modules/external-reports/external-reports.module'
 import { FileModule } from './modules/files/file.module'
@@ -39,8 +41,10 @@ import { TeacherModule } from './modules/teacher/teacher.module'
 import { TestsModule } from './modules/test/tests.module'
 import { TransferModule } from './modules/transfer/transfer.module'
 import { TutorMessagesModule } from './modules/tutor-messages/tutor-messages.module'
+import { TwilioModule } from './modules/twilio/twilio.module'
 import { UserModule } from './modules/user/user.module'
 import { EverythingSubscriber } from './utils/event-subscriber'
+import { DatabaseMonitorService } from './database-monitor.service'
 
 @Module({
   imports: [
@@ -100,8 +104,15 @@ import { EverythingSubscriber } from './utils/event-subscriber'
     RegionalModule,
     MessageTemplatesModule,
     TutorMessagesModule,
+    AutomaticNotificationsModule,
+    TwilioModule,
+    AiModule,
   ],
   controllers: [AppController],
-  providers: [AppService, EverythingSubscriber],
+  providers: [
+    AppService, 
+    EverythingSubscriber,
+    DatabaseMonitorService,
+  ],
 })
 export class AppModule {}

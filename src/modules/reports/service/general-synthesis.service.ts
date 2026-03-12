@@ -1,12 +1,15 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm'
 import { Parser } from 'json2csv'
+import { validateStudentResultToken } from 'src/helpers/crypto'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { County } from 'src/modules/counties/model/entities/county.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
 import { Serie } from 'src/modules/serie/model/entities/serie.entity'
+import { Student } from 'src/modules/student/model/entities/student.entity'
+import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
 import { Connection, Repository } from 'typeorm'
@@ -102,14 +105,15 @@ export class GeneralSynthesisService {
       items = await Promise.all(
         ava?.AVA_TES?.map(async (test) => {
           if (test.TES_DIS.DIS_TIPO === 'Objetiva') {
-            const STUDENTS_TEST = await Promise.all(
-              idsStudents?.map(async (ALU_ID) => {
-                const { student, studentTest } =
-                  await this.generalSynthesisRepository.getInfoStudent(
-                    +ALU_ID,
-                    test?.TES_ID,
-                    schoolClass,
-                  )
+            const studentsData =
+              await this.generalSynthesisRepository.getBulkStudentsInfo(
+                idsStudents.map((id) => +id),
+                test?.TES_ID,
+                schoolClass,
+              )
+
+            const STUDENTS_TEST = studentsData.map(
+              ({ student, studentTest }) => {
 
                 const ANSWERS_TEST = studentTest?.ANSWERS_TEST?.filter(
                   (arr, index, self) =>
@@ -143,12 +147,11 @@ export class GeneralSynthesisService {
                   name: student.ALU_NOME,
                   quests,
                   studentTest,
-                  avg:
-                    +Math.round(
-                      (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
-                    ) ?? 0,
+                  avg: Math.round(
+                    (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
+                  ) || 0,
                 }
-              }),
+              },
             )
 
             const descriptors = test.TEMPLATE_TEST.map((data) => {
@@ -174,32 +177,30 @@ export class GeneralSynthesisService {
               students: STUDENTS_TEST,
             }
           } else {
-            const students = await Promise.all(
-              idsStudents?.map(async (ALU_ID) => {
-                const { student, studentTest } =
-                  await this.generalSynthesisRepository.getInfoStudent(
-                    +ALU_ID,
-                    test?.TES_ID,
-                    schoolClass,
-                  )
+            const studentsData =
+              await this.generalSynthesisRepository.getBulkStudentsInfo(
+                idsStudents.map((id) => +id),
+                test?.TES_ID,
+                schoolClass,
+              )
 
-                let type: string = 'nao_informado'
+            const students = studentsData.map(({ student, studentTest }) => {
+              let type: string = 'nao_informado'
 
-                if (studentTest) {
-                  type =
-                    !studentTest?.ALT_FINALIZADO ||
-                    !studentTest?.ANSWERS_TEST?.length
-                      ? 'nao_avaliado'
-                      : studentTest.ANSWERS_TEST[0].ATR_RESPOSTA
-                }
+              if (studentTest) {
+                type =
+                  !studentTest?.ALT_FINALIZADO ||
+                  !studentTest?.ANSWERS_TEST?.length
+                    ? 'nao_avaliado'
+                    : studentTest.ANSWERS_TEST[0].ATR_RESPOSTA
+              }
 
-                return {
-                  id: student.ALU_ID,
-                  name: student.ALU_NOME,
-                  type,
-                }
-              }),
-            )
+              return {
+                id: student.ALU_ID,
+                name: student.ALU_NOME,
+                type,
+              }
+            })
 
             const resultDataReading = students.reduce(
               (acc, cur) => {
@@ -506,6 +507,162 @@ export class GeneralSynthesisService {
       min,
       max,
       avg,
+    }
+  }
+
+  async getStudentResult(
+    assessmentId: number,
+    studentId: number,
+    token: string,
+  ) {
+    const isValidToken = validateStudentResultToken(
+      assessmentId,
+      studentId,
+      token,
+    )
+
+    if (!isValidToken) {
+      throw new UnauthorizedException('Token inválido ou expirado')
+    }
+
+    const queryBuilder = this.assessmentRepository
+      .createQueryBuilder('Assessment')
+      .leftJoinAndSelect('Assessment.AVA_TES', 'AVA_TES')
+      .leftJoinAndSelect('AVA_TES.TES_SER', 'TES_SER')
+      .leftJoinAndSelect('AVA_TES.TEMPLATE_TEST', 'TEMPLATE_TEST')
+      .leftJoinAndSelect('TEMPLATE_TEST.TEG_MTI', 'TEG_MTI')
+      .leftJoinAndSelect('AVA_TES.TES_DIS', 'TES_DIS')
+      .andWhere('Assessment.AVA_ID = :AVA_ID', {
+        AVA_ID: assessmentId,
+      })
+
+    const ava = await queryBuilder.getOne()
+
+    if (!ava || !ava.AVA_TES?.length) {
+      return {
+        items: [],
+      }
+    }
+
+    const student = await this.connection
+      .getRepository(Student)
+      .createQueryBuilder('Student')
+      .select([
+        'Student.ALU_ID as ALU_ID',
+        'Student.ALU_NOME as ALU_NOME',
+        'ALU_TUR.TUR_NOME as TUR_NOME',
+        'ALU_ESC.ESC_NOME as ESC_NOME',
+        'ESC_MUN.MUN_NOME as MUN_NOME',
+      ])
+      .leftJoin('Student.ALU_TUR', 'ALU_TUR')
+      .leftJoin('Student.ALU_ESC', 'ALU_ESC')
+      .leftJoin('ALU_ESC.ESC_MUN', 'ESC_MUN')
+      .where('Student.ALU_ID = :studentId', { studentId })
+      .getRawOne()
+
+    if (!student) {
+      return {
+        items: [],
+      }
+    }
+
+    const items = await Promise.all(
+      ava.AVA_TES.map(async (test) => {
+        if (test.TES_DIS.DIS_TIPO === SubjectTypeEnum.OBJETIVA) {
+          const { studentTest } =
+            await this.generalSynthesisRepository.getInfoStudent(
+              studentId,
+              test?.TES_ID,
+              null,
+            )
+
+          const ANSWERS_TEST = studentTest?.ANSWERS_TEST?.filter(
+            (arr, index, self) =>
+              index ===
+              self.findIndex(
+                (t) =>
+                  t?.questionTemplate?.TEG_ID === arr?.questionTemplate?.TEG_ID,
+              ),
+          )
+
+          const STUDENTS_RIGHT = ANSWERS_TEST?.reduce((sum, cur) => {
+            if (cur?.ATR_CERTO) {
+              return sum + 1
+            } else {
+              return sum
+            }
+          }, 0)
+
+          const quests = ANSWERS_TEST?.map((data) => {
+            return {
+              id: data.ATR_ID,
+              letter: data.ATR_RESPOSTA,
+              type: data?.ATR_CERTO ? 'right' : 'wrong',
+              questionId: data?.questionTemplate?.TEG_ID,
+            }
+          })
+
+          const descriptors = test.TEMPLATE_TEST.map((data) => {
+            return {
+              id: data?.TEG_ID,
+              TEG_ORDEM: data?.TEG_ORDEM,
+              cod: data?.TEG_MTI?.MTI_CODIGO,
+              description: data?.TEG_MTI?.MTI_ID
+                ? `${data?.TEG_MTI?.MTI_CODIGO} - ${data?.TEG_MTI?.MTI_DESCRITOR}`
+                : '',
+            }
+          })
+
+          return {
+            id: test.TES_ID,
+            subject: test.TES_DIS.DIS_NOME,
+            type: SubjectTypeEnum.OBJETIVA,
+            student: {
+              ...student,
+              quests,
+              avg: STUDENTS_RIGHT
+                ? +Math.round(
+                    (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
+                  )
+                : 0,
+            },
+            quests: {
+              total: descriptors.length,
+              descriptors,
+            },
+          }
+        } else {
+          const { studentTest } =
+            await this.generalSynthesisRepository.getInfoStudent(
+              studentId,
+              test?.TES_ID,
+              null,
+            )
+
+          let type: string = 'nao_informado'
+
+          if (studentTest) {
+            type =
+              !studentTest?.ALT_FINALIZADO || !studentTest?.ANSWERS_TEST?.length
+                ? 'nao_avaliado'
+                : studentTest.ANSWERS_TEST[0].ATR_RESPOSTA
+          }
+
+          return {
+            id: test.TES_ID,
+            subject: test.TES_DIS.DIS_NOME,
+            type: SubjectTypeEnum.LEITURA,
+            student: {
+              ...student,
+              type,
+            },
+          }
+        }
+      }),
+    )
+
+    return {
+      items: items.filter((item) => item !== null),
     }
   }
 }

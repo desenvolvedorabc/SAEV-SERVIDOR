@@ -25,6 +25,7 @@ import { EvolutionaryLineRepository } from './repositories/evolutionary-line.rep
 import { GeneralSynthesisRepository } from './repositories/general-synthesis.repository'
 import { ReportGroupingRepository } from './repositories/grouping.repository'
 import { NotEvaluatedRepository } from './repositories/not-evaluated.repository'
+import { PerformanceHistoryRepository } from './repositories/performance-history.repository'
 import { PerformanceLevelRepository } from './repositories/performance-level.repository'
 import { ReportRaceRepository } from './repositories/race.repository'
 import { ReleasesRepository } from './repositories/releases.repository'
@@ -35,6 +36,7 @@ import { EvolutionaryLineReadingService } from './service/evolutionary-line-read
 import { GeneralSynthesisService } from './service/general-synthesis.service'
 import { GroupingService } from './service/grouping.service'
 import { NotEvaluatedService } from './service/not-evaluated.service'
+import { PerformanceHistoryService } from './service/performance-history.service'
 import { PerformanceLevelService } from './service/performance-level.service'
 import { ReportRaceService } from './service/race.service'
 import { ReleasesService } from './service/releases.service'
@@ -42,8 +44,6 @@ import { ReportsService } from './service/reports.service'
 import { ResultByDescriptorsService } from './service/result-by-descriptors.service'
 import { ReportSchoolAbsencesService } from './service/school-absences.service'
 import { ReportSyntheticService } from './service/synthetic.service'
-import { PerformanceHistoryService } from "./service/performance-history.service";
-import { PerformanceHistoryRepository } from "./repositories/performance-history.repository";
 
 @Module({
   imports: [

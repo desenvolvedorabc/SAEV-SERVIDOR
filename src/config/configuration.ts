@@ -11,8 +11,8 @@ export default () => ({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     autoLoadEntities: true,
-    migrationsRun: process.env.DB_MIGRATIONS_RUN === 'true',
-    synchronize: process.env.DB_SYNC === 'true',
+    migrationsRun: true,
+    synchronize: false,
     migrations: [
       path.join(__dirname, '..', '/database/migrations/**/*{.ts,.js}'),
     ],
@@ -27,7 +27,10 @@ export default () => ({
       migrationsDir: __dirname + '/../database/migrations',
     },
     extra: {
-      connectionLimit: process.env.DB_CONNECT_LIMIT || 10,
+      connectionLimit: process.env.DB_CONNECTION_LIMIT || 50,
+      waitForConnections: process.env.DB_WAIT_FOR_CONNECTIONS == 'true',
+      queueLimit: 0, // 0 sem limite
+      connectTimeout: 10000, // ms
       socketPath: !process.env.DB_HOST ? process.env.DB_SOCKET : undefined,
     },
   },

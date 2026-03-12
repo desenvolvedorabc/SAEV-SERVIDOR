@@ -1,11 +1,12 @@
 import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common'
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Response } from 'express'
 import { PaginationParams } from 'src/helpers/params'
 import { CurrentUser } from 'src/modules/auth/decorator/current-user.decorator'
 import { JwtAuthGuard } from 'src/modules/auth/guard/jwt-auth.guard'
 import { User } from 'src/modules/user/model/entities/user.entity'
 
+import { StudentResultDto } from '../model/dto/student-result.dto'
 import { ReportsService } from '../service/reports.service'
 
 @Controller('reports')
@@ -296,5 +297,19 @@ export class ReportsController {
       `attachment; filename=infrequencia-${Date.now()}.csv`,
     )
     return response.status(200).send('\ufeff' + data)
+  }
+
+  @Get('/student-result')
+  @ApiOperation({
+    summary: 'Busca resultados de um aluno específico em uma avaliação',
+    description:
+      'Endpoint público para pais/responsáveis visualizarem os resultados das provas dos alunos. Requer token de segurança para prevenir acesso não autorizado.',
+  })
+  async getStudentResult(@Query() params: StudentResultDto) {
+    return this.reportsService.getStudentResult(
+      params.assessmentId,
+      params.studentId,
+      params.token,
+    )
   }
 }

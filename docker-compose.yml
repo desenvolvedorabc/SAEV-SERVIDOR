@@ -2,51 +2,23 @@ version: '3.7'
 
 services:
   db:
-      container_name: db
-      image: mysql:8.0
-      # Suporte multi-arquitetura (x86 e ARM64/Apple Silicon)
-      platform: linux/amd64
-      command: --innodb_use_native_aio=0 --default-authentication-plugin=mysql_native_password
-      expose:
-          - 3306
-      ports:
-          - 3306:3306
-      environment:
-          - MYSQL_ROOT_PASSWORD=app
-          - MYSQL_DATABASE=abc_saev
-      # Healthcheck para garantir que o MySQL está pronto antes de executar scripts
-      healthcheck:
-        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-papp"]
-        interval: 5s
-        timeout: 3s
-        retries: 30
-        start_period: 30s
-    #   volumes:
-    #       - .docker/db/data:/var/lib/mysql
-      networks:
-          - backend
-#   api:
-#     container_name: api
-#     build:
-#       context: .
-#       target: development
-#     volumes:
-#       - .:/usr/src/app
-#       - /usr/src/app/node_modules
-#     ports:
-#       - ${PORT}:${PORT}
-#       - 9229:9229
-#     #dev 
-#     command: yarn run start:prod
-#     #test
-#     #command: yarn run test:watch
-#     env_file:
-#       - .env
-#     networks:
-#       - backend
-#     depends_on:
-#       - db
+    container_name: db
+    image: mysql/mysql-server:8.0.26
+    command: --default-authentication-plugin=mysql_native_password --innodb_use_native_aio=0
+    expose:
+      - 3306
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: Saev
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - mysql-saev:/var/lib/mysql
 
 networks:
-  backend:
+  default:
     driver: bridge
+
+volumes:
+  mysql-saev:

@@ -142,6 +142,12 @@ export class CreateCountyDto {
   @IsBoolean()
   MUN_MENSAGEM_EMAIL_ATIVO: boolean
 
+  @ApiProperty({
+    type: Boolean,
+  })
+  @IsBoolean()
+  MUN_LEITURA_HERBY_ATIVO: boolean
+
   @ApiProperty()
   @IsNotEmpty({
     message: 'Informe o ID do estado',

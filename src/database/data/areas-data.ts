@@ -146,6 +146,10 @@ export const areasData: IArea[] = [
     description: 'Síntese Geral',
   },
   {
+    name: 'AI_ASSIST',
+    description: 'Assistente de IA',
+  },
+  {
     name: 'TES',
     description: 'Testes',
   },

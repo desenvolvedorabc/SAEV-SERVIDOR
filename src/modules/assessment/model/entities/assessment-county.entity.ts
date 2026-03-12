@@ -38,13 +38,13 @@ export class AssessmentCounty {
   @UpdateDateColumn({ type: 'timestamp' })
   AVM_DT_ATUALIZACAO: Date
 
-  @Column({ type: 'timestamp', nullable: false })
+  @Column({ type: 'timestamp', nullable: true })
   AVM_DT_INICIO: Date
 
-  @Column({ type: 'timestamp', nullable: false })
+  @Column({ type: 'timestamp', nullable: true })
   AVM_DT_FIM: Date
 
-  @Column({ type: 'timestamp', nullable: false })
+  @Column({ type: 'timestamp', nullable: true })
   AVM_DT_DISPONIVEL: Date
 
   @ManyToOne(() => County, (municipio) => municipio.assessmentCounty, {

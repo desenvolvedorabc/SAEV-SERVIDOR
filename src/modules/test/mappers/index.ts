@@ -1,19 +1,23 @@
-import { Student } from 'src/modules/student/model/entities/student.entity'
-
 import { Test } from '../model/entities/test.entity'
 
-export function mapperUsersUploadInfoByHerby(students: Student[], serie: any) {
+export function mapperUsersUploadInfoByHerby(students: any[], serie: any) {
   const userUploadInfos = students.map((student) => {
     return {
-      foreignStudentId: student.ALU_ID,
-      studentName: student.ALU_NOME,
-      foreignClassId: student?.ALU_TUR?.TUR_ID,
-      className: student?.ALU_TUR?.TUR_NOME,
-      turno: student?.ALU_TUR?.TUR_PERIODO.toUpperCase(),
-      foreignSchoolId: student?.ALU_ESC?.ESC_ID,
-      schoolName: student?.ALU_ESC?.ESC_NOME,
-      foreignCityId: student?.ALU_ESC?.ESC_MUN?.MUN_ID,
-      cityName: student?.ALU_ESC?.ESC_MUN?.MUN_NOME,
+      foreignStudentId: student?.ALU_ID,
+      studentName: student?.ALU_NOME,
+      foreignClassId: student?.TUR_ID,
+      className: student?.TUR_NOME,
+      turno: student?.TUR_PERIODO?.toUpperCase(),
+      foreignSchoolId: student?.ESC_ID,
+      schoolName: student?.ESC_NOME,
+      schoolInep: student?.ESC_INEP,
+      schoolRede: student?.ESC_TIPO,
+      foreignCityId: student?.MUN_ID,
+      cityName: student?.MUN_NOME,
+      cityIbge: student?.MUN_COD_IBGE,
+      stateName: student?.stateName,
+      regionalEstadualName: student?.regionalEstadualName,
+      regionalMunicipalName: student?.regionalMunicipalName,
       etapa: serie,
     }
   })

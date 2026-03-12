@@ -1,4 +1,3 @@
-import { BullModule } from '@nestjs/bull'
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { ReportDescriptor } from 'src/modules/reports/model/entities/report-descriptor.entity'
@@ -35,9 +34,6 @@ import { JobSubjectRepository } from './services/repositories/job-subject.reposi
       ReportQuestion,
       Job,
     ]),
-    BullModule.registerQueue({
-      name: 'job',
-    }),
   ],
   providers: [
     JobsService,

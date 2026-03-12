@@ -40,4 +40,5 @@ lerna-debug.log*
 .env
 .env.production
 
-testee.ts
+CLAUDE.md
+IMPLEMENTACAO_PERIODOS_AVALIACAO.md

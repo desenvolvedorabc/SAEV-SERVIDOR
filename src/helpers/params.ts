@@ -231,11 +231,26 @@ export class PaginationParams {
   )
   date?: Date = null
 
+  @ApiProperty({
+    type: String,
+    required: false,
+  })
+  @IsOptional()
+  isDestination?: '0' | '1' = null
+
   isCsv? = false
 
   countQueries? = false
 
   verifyProfileForState? = false
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  allCountyRegionals?: boolean = false
 }
 
 export class PaginationParamsLogs {

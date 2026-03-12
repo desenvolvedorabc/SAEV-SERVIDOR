@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { PaginationParams } from 'src/helpers/params'
 import { User } from 'src/modules/user/model/entities/user.entity'
-import { InternalServerError } from 'src/utils/errors'
 import { paginateData } from 'src/utils/paginate-data'
 import { Repository } from 'typeorm'
 
@@ -46,11 +45,21 @@ export class NotificationsService {
       user,
     })
 
-    try {
-      return await this.notificationRepository.save(notification)
-    } catch (err) {
-      throw new InternalServerError()
-    }
+    return this.notificationRepository.save(notification)
+  }
+
+  async createMany(notifications: any[]) {
+    const notificationsToSave = notifications.map((notification) => {
+      return this.notificationRepository.create({
+        title: notification.title,
+        message: notification.message,
+        user: notification.user,
+      })
+    })
+
+    await this.notificationRepository.save(notificationsToSave, {
+      chunk: 100,
+    })
   }
 
   async paginate(paginationParams: PaginationParams, user: User) {

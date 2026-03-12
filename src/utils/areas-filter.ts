@@ -45,6 +45,7 @@ export const areasFilter = {
     'REG_EST',
     'REG_MUN',
     'HIST_DES',
+    'AI_ASSIST',
   ],
   [RoleProfile.ESTADO]: [
     'HOME',
@@ -89,6 +90,7 @@ export const areasFilter = {
     'REG_UNI',
     'REG_EST',
     'HIST_DES',
+    'AI_ASSIST',
   ],
   [RoleProfile.MUNICIPIO_ESTADUAL]: [
     'ESC',
@@ -120,6 +122,8 @@ export const areasFilter = {
     'SIN_TEST',
     'REG_UNI',
     'HIST_DES',
+    'EDI_MUN',
+    'AI_ASSIST',
   ],
   [RoleProfile.MUNICIPIO_MUNICIPAL]: [
     'ESC',
@@ -151,6 +155,8 @@ export const areasFilter = {
     'SIN_TEST',
     'REG_MUN',
     'HIST_DES',
+    'EDI_MUN',
+    'AI_ASSIST',
   ],
   [RoleProfile.ESCOLA]: [
     'PRO',
@@ -180,5 +186,6 @@ export const areasFilter = {
     'SIN_TEST',
     'MEN_TUT',
     'HIST_DES',
+    'AI_ASSIST',
   ],
 }

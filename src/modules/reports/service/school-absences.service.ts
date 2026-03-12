@@ -87,12 +87,14 @@ export class ReportSchoolAbsencesService {
   }
 
   async generateCsvOfReport(dto: PaginationParams, user: User) {
-    const { data, level } = await this.getData(dto, user, true)
+    const params = formatParamsByProfile(dto, user)
+
+    const { data, level } = await this.getData(params, user, true)
 
     const formattedData = await Promise.all(
       data.items.map(async (item) => {
         const { graph } = await this.getGraphAndTotalInfrequencyForMonths({
-          ...dto,
+          ...params,
           [level]: item[optionsFilter[level][0]],
         })
 
@@ -104,7 +106,7 @@ export class ReportSchoolAbsencesService {
 
         return {
           nivel: namesInBROfTheLevel[level],
-          ano: dto.year,
+          ano: params.year,
           id: item[optionsFilter[level][0]],
           nome: item[optionsFilter[level][1]],
           total_faltas: graph.total_infrequency,

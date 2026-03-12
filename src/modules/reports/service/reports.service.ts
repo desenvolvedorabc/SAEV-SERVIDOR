@@ -167,6 +167,18 @@ export class ReportsService {
     return await this.reportRaceService.generateCsv(paginationParams, user)
   }
 
+  async getStudentResult(
+    assessmentId: number,
+    studentId: number,
+    token: string,
+  ) {
+    return await this.generalSynthesisService.getStudentResult(
+      assessmentId,
+      studentId,
+      token,
+    )
+  }
+
   async upsertReportEditionByAssessmentId(
     assessmentId: number,
     filter: DeepPartial<ReportEdition>,

@@ -61,7 +61,7 @@ export class GeneralSynthesisRepository {
       .where('Student.ALU_ID = :studentId', { studentId })
       .getOne()
 
-    const studentTest = await this.connection
+    const queryBuilderStudentTest = await this.connection
       .getRepository(StudentTest)
       .createQueryBuilder('StudentTest')
       .select([
@@ -79,15 +79,73 @@ export class GeneralSynthesisRepository {
         studentId,
       })
       .andWhere('StudentTest.ALT_TES_ID = :testId', { testId })
-      .andWhere('StudentTest.schoolClass = :schoolClassId', {
-        schoolClassId,
-      })
-      .getOne()
+
+    if (schoolClassId) {
+      queryBuilderStudentTest.andWhere(
+        'StudentTest.schoolClass = :schoolClassId',
+        {
+          schoolClassId,
+        },
+      )
+    }
+
+    const studentTest = await queryBuilderStudentTest.getOne()
 
     return {
       student,
       studentTest,
     }
+  }
+
+  async getBulkStudentsInfo(
+    studentIds: number[],
+    testId: number,
+    schoolClassId: number,
+  ) {
+    const students = await this.connection
+      .getRepository(Student)
+      .createQueryBuilder('Student')
+      .select(['Student.ALU_ID', 'Student.ALU_NOME'])
+      .where('Student.ALU_ID IN (:...studentIds)', { studentIds })
+      .getMany()
+
+    const queryBuilderStudentTest = this.connection
+      .getRepository(StudentTest)
+      .createQueryBuilder('StudentTest')
+      .select([
+        'StudentTest.ALT_ID',
+        'StudentTest.ALT_FINALIZADO',
+        'StudentTest.ALT_JUSTIFICATIVA',
+        'ALT_ALU.ALU_ID',
+        'ANSWERS_TEST.ATR_ID',
+        'ANSWERS_TEST.ATR_RESPOSTA',
+        'ANSWERS_TEST.ATR_CERTO',
+        'questionTemplate.TEG_ID',
+      ])
+      .leftJoin('StudentTest.ALT_ALU', 'ALT_ALU')
+      .leftJoin('StudentTest.ANSWERS_TEST', 'ANSWERS_TEST')
+      .leftJoin('ANSWERS_TEST.questionTemplate', 'questionTemplate')
+      .where('ALT_ALU.ALU_ID IN (:...studentIds)', { studentIds })
+      .andWhere('StudentTest.ALT_TES_ID = :testId', { testId })
+
+    if (schoolClassId) {
+      queryBuilderStudentTest.andWhere(
+        'StudentTest.schoolClass = :schoolClassId',
+        { schoolClassId },
+      )
+    }
+
+    const studentTests = await queryBuilderStudentTest.getMany()
+
+    const studentMap = new Map(students.map((s) => [s.ALU_ID, s]))
+    const studentTestMap = new Map(
+      studentTests.map((st) => [st.ALT_ALU.ALU_ID, st]),
+    )
+
+    return studentIds.map((studentId) => ({
+      student: studentMap.get(studentId) || null,
+      studentTest: studentTestMap.get(studentId) || null,
+    }))
   }
 
   async getReportEditionGroupedByParams({
@@ -146,7 +204,7 @@ export class GeneralSynthesisRepository {
           'county.stateRegionalId = :stateRegionalId',
           { stateRegionalId },
         )
-        .groupBy('test.TES_ID, REGIONAL.countyId, ReportEdition.editionAVAID')
+        .groupBy('test.TES_ID, REGIONAL.countyId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID')
     } else if (stateId) {
       queryBuilder
         .addSelect(['stateRegional.id as id', 'stateRegional.name as name'])
@@ -158,7 +216,7 @@ export class GeneralSynthesisRepository {
         .innerJoin('county.stateRegional', 'stateRegional')
         .andWhere('county.stateId = :stateId', { stateId })
         .groupBy(
-          'REPORT_SUBJECT.testTESID, county.stateRegionalId, ReportEdition.editionAVAID',
+          'REPORT_SUBJECT.testTESID, county.stateRegionalId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
         )
     } else {
       queryBuilder
@@ -174,7 +232,7 @@ export class GeneralSynthesisRepository {
         )
         .andWhere('county.MUN_PARCEIRO_EPV IS TRUE')
         .groupBy(
-          'test.TES_ID, ReportEdition.countyMUNID, ReportEdition.editionAVAID',
+          'test.TES_ID, ReportEdition.countyMUNID, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
         )
     }
 

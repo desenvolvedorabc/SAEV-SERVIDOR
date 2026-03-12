@@ -14,9 +14,12 @@ import { paginateRaw, Pagination } from 'nestjs-typeorm-paginate'
 import { PaginationParams } from 'src/helpers/params'
 import { editFileName } from 'src/helpers/utils'
 import { AssessmentOnline } from 'src/modules/assessment-online/entities/assessment-online.entity'
+import { County } from 'src/modules/counties/model/entities/county.entity'
 import { StudentTest } from 'src/modules/release-results/model/entities/student-test.entity'
 import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
+import { School } from 'src/modules/school/model/entities/school.entity'
 import { Student } from 'src/modules/student/model/entities/student.entity'
+import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { InternalServerError } from 'src/utils/errors'
 import { paginateData } from 'src/utils/paginate-data'
@@ -260,6 +263,43 @@ export class TestsService {
     return tests
   }
 
+  async generateCard(id: number, getTestHerby: GetTestHerby) {
+    const test = await this.findOne(id)
+
+    if (test?.TES_DIS?.DIS_TIPO === SubjectTypeEnum?.OBJETIVA) {
+      return this.findOneByHerby(id, getTestHerby)
+    }
+
+    let county = null
+
+    if (getTestHerby?.schoolId) {
+      const school = await this.connection.getRepository(School).findOne({
+        where: {
+          ESC_ID: getTestHerby?.schoolId,
+        },
+        relations: ['ESC_MUN'],
+      })
+
+      county = school.ESC_MUN
+    }
+
+    county = await this.connection.getRepository(County).findOne({
+      where: {
+        MUN_ID: getTestHerby?.countyId,
+      },
+    })
+
+    if (!county) {
+      throw new NotFoundException('Município nao encontrado')
+    }
+
+    if (county?.MUN_LEITURA_HERBY_ATIVO) {
+      return this.findOneByHerby(id, getTestHerby)
+    }
+
+    return this.findOneByEdler(id, getTestHerby)
+  }
+
   async findOneByHerby(id: number, getTestHerby: GetTestHerby) {
     const { countyId, schoolId } = getTestHerby
 
@@ -277,6 +317,7 @@ export class TestsService {
     const { userUploadInfos } = mapperUsersUploadInfoByHerby(students, serie)
 
     const formattedTest = {
+      provider: 'herby',
       idProvaPt: test.TES_ID,
       userUploadInfos,
     }
@@ -298,10 +339,7 @@ export class TestsService {
 
     const serie = serieNumbers[test.TES_SER.SER_NUMBER]
 
-    const dataGroupped = _.groupBy(
-      students,
-      (student) => student?.ALU_TUR?.TUR_ID,
-    )
+    const dataGroupped = _.groupBy(students, (student) => student?.TUR_ID)
 
     const keyTurmas = Object.keys(dataGroupped)
 
@@ -316,13 +354,13 @@ export class TestsService {
       })
 
       return {
-        className: student?.ALU_TUR?.TUR_NOME,
-        schoolName: student?.ALU_ESC?.ESC_NOME,
-        cityName: student?.ALU_ESC?.ESC_MUN?.MUN_NOME,
+        className: student?.TUR_NOME,
+        schoolName: student?.ESC_NOME,
+        cityName: student?.MUN_NOME,
         grade: serie,
-        foreignClassId: String(student?.ALU_TUR?.TUR_ID),
-        foreignSchoolId: String(student?.ALU_ESC?.ESC_ID),
-        foreignCityId: String(student?.ALU_ESC?.ESC_MUN?.MUN_ID),
+        foreignClassId: String(student?.TUR_ID),
+        foreignSchoolId: String(student?.ESC_ID),
+        foreignCityId: String(student?.MUN_ID),
         students,
       }
     })
@@ -331,6 +369,7 @@ export class TestsService {
       userId: this.configService.get<string>('USER_SAEV_EDLER'),
       testId: String(test.TES_ID),
       classes,
+      provider: 'edler',
     }
 
     return formattedTest
@@ -510,21 +549,29 @@ export class TestsService {
     const queryBuilderStudents = this.studentRepository
       .createQueryBuilder('Students')
       .select([
-        'Students.ALU_ID',
-        'Students.ALU_NOME',
-        'ALU_TUR.TUR_ID',
-        'ALU_TUR.TUR_NOME',
-        'ALU_TUR.TUR_PERIODO',
-        'ALU_ESC.ESC_ID',
-        'ALU_ESC.ESC_NOME',
-        'ESC_MUN.MUN_ID',
-        'ESC_MUN.MUN_NOME',
+        'Students.ALU_ID as ALU_ID',
+        'Students.ALU_NOME as ALU_NOME',
+        'ALU_TUR.TUR_ID as TUR_ID',
+        'ALU_TUR.TUR_NOME as TUR_NOME',
+        'ALU_TUR.TUR_PERIODO as TUR_PERIODO',
+        'ALU_ESC.ESC_ID as ESC_ID',
+        'ALU_ESC.ESC_NOME as ESC_NOME',
+        'ALU_ESC.ESC_INEP as ESC_INEP',
+        'ALU_ESC.ESC_TIPO as ESC_TIPO',
+        'ESC_MUN.MUN_ID as MUN_ID',
+        'ESC_MUN.MUN_NOME as MUN_NOME',
+        'ESC_MUN.MUN_COD_IBGE as MUN_COD_IBGE',
+        'StateRegional.name as regionalEstadualName',
+        'MunicipalRegional.name as regionalMunicipalName',
+        'State.name as stateName',
       ])
-      .leftJoin('Students.ALU_ESC', 'ALU_ESC')
-      .leftJoin('ALU_ESC.ESC_MUN', 'ESC_MUN')
-      .leftJoin('Students.ALU_TUR', 'ALU_TUR')
-      .andWhere('Students.ALU_ATIVO = 1')
-      .andWhere('Students.ALU_TUR IS NOT NULL')
+      .innerJoin('Students.ALU_ESC', 'ALU_ESC')
+      .innerJoin('Students.ALU_TUR', 'ALU_TUR')
+      .innerJoin('ALU_ESC.ESC_MUN', 'ESC_MUN')
+      .leftJoin('ESC_MUN.stateRegional', 'StateRegional')
+      .leftJoin('ALU_ESC.regional', 'MunicipalRegional')
+      .innerJoin('ESC_MUN.state', 'State')
+      .where('Students.ALU_ATIVO = 1')
       .andWhere('Students.ALU_SER_ID = :serieId', {
         serieId,
       })
@@ -543,7 +590,7 @@ export class TestsService {
       })
     }
 
-    const students = await queryBuilderStudents.getMany()
+    const students = await queryBuilderStudents.getRawMany()
 
     return {
       students,

@@ -4,6 +4,7 @@ import { Parser } from 'json2csv'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
+import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
 import { Connection, Repository } from 'typeorm'
@@ -25,12 +26,397 @@ export class PerformanceHistoryService {
   async handle(paginationParams: PaginationParams, user: User) {
     const params = formatParamsByProfile(paginationParams, user)
 
-    const { serie, school, year, county } = params
+    const {
+      school,
+      schoolClass,
+      county,
+      municipalityOrUniqueRegionalId,
+      type,
+    } = params
 
-    if (!school) {
-      throw new BadRequestException('Informe uma escola.')
+    if (schoolClass) {
+      return await this.getStudentsBySchoolClass(params)
     }
 
+    if (school) {
+      if (type === 'general') {
+        return await this.getSchoolClassesBySchool(params)
+      }
+      return await this.getStudentsBySchool(params)
+    }
+
+    if (municipalityOrUniqueRegionalId) {
+      return await this.getSchoolsByRegional(params)
+    }
+
+    if (county) {
+      return await this.getRegionalsByCounty(params)
+    }
+  }
+
+  private calculateAggregatedPerformance(
+    testReports: any[],
+    subjectType: SubjectTypeEnum,
+    serieNumber: number,
+  ): number {
+    if (subjectType === SubjectTypeEnum.OBJETIVA) {
+      const totalGrades = testReports.reduce(
+        (sum: number, rs: any) => sum + Number(rs.totalGradesStudents || 0),
+        0,
+      )
+      const totalPresent = testReports.reduce(
+        (sum: number, rs: any) => sum + Number(rs.countPresentStudents || 0),
+        0,
+      )
+
+      return totalPresent > 0 ? Math.round(totalGrades / totalPresent) : 0
+    } else {
+      const totalStudents = testReports.reduce(
+        (sum: number, rs: any) => sum + Number(rs.countTotalStudents || 0),
+        0,
+      )
+
+      let rightQuestions = 0
+
+      switch (serieNumber) {
+        case 1:
+          rightQuestions = testReports.reduce(
+            (sum: number, rs: any) =>
+              sum +
+              Number(rs.fluente || 0) +
+              Number(rs.nao_fluente || 0) +
+              Number(rs.frases || 0),
+            0,
+          )
+          break
+        case 2:
+        case 3:
+          rightQuestions = testReports.reduce(
+            (sum: number, rs: any) =>
+              sum + Number(rs.fluente || 0) + Number(rs.nao_fluente || 0),
+            0,
+          )
+          break
+        default:
+          rightQuestions = testReports.reduce(
+            (sum: number, rs: any) => sum + Number(rs.fluente || 0),
+            0,
+          )
+          break
+      }
+
+      const totalRightQuestions =
+        totalStudents > 0
+          ? Math.round((rightQuestions / totalStudents) * 100)
+          : 0
+
+      return totalRightQuestions
+    }
+  }
+
+  private async getRegionalsByCounty(params: PaginationParams) {
+    const { reports } =
+      await this.performanceHistoryRepository.getDataReports(params)
+
+    const { exams } =
+      await this.performanceHistoryRepository.getExamsBySerieAndYear(params)
+
+    const serieNumber =
+      reports.length > 0 && reports[0].reportsSubjects.length > 0
+        ? reports[0].reportsSubjects[0].test?.TES_SER?.SER_NUMBER
+        : 1
+
+    const regionalsMap = new Map()
+
+    reports.forEach((report) => {
+      const regionalId = report.regional?.id
+      const regionalName = report.regional?.name
+
+      if (!regionalId) return
+
+      if (!regionalsMap.has(regionalId)) {
+        regionalsMap.set(regionalId, {
+          id: regionalId,
+          name: regionalName,
+        })
+      }
+    })
+
+    // Agrupa por edição
+    const editionsMap = new Map()
+
+    reports.forEach((report) => {
+      const editionId = report.edition?.AVA_ID
+      const editionName = report.edition?.AVA_NOME
+
+      if (!editionsMap.has(editionId)) {
+        editionsMap.set(editionId, {
+          id: editionId,
+          name: editionName,
+          tests: [],
+        })
+      }
+    })
+
+    const items = []
+    for (const [editionId, edition] of editionsMap.entries()) {
+      const tests = []
+
+      for (const exam of exams) {
+        const data = []
+
+        for (const [regionalId, regionalData] of regionalsMap.entries()) {
+          const regionalReports = reports
+            .filter(
+              (r) =>
+                r.regional?.id === regionalId &&
+                r.edition?.AVA_ID === editionId,
+            )
+            .map((r) =>
+              r.reportsSubjects.find((rs) => rs.test.TES_ID === exam.TES_ID),
+            )
+            .filter(Boolean)
+
+          if (regionalReports.length === 0) continue
+
+          // Calcula média agregada baseada no tipo de teste
+          const avg = this.calculateAggregatedPerformance(
+            regionalReports,
+            exam.TES_DIS.DIS_TIPO,
+            serieNumber,
+          )
+
+          data.push({
+            id: regionalData.id,
+            name: regionalData.name,
+            avg,
+          })
+        }
+
+        if (data.length > 0) {
+          tests.push({
+            id: exam.TES_ID,
+            subject: exam.TES_DIS.DIS_NOME,
+            dis_tipo: exam.TES_DIS.DIS_TIPO,
+            data,
+          })
+        }
+      }
+
+      if (tests.length > 0) {
+        items.push({
+          id: edition.id,
+          name: edition.name,
+          tests,
+        })
+      }
+    }
+
+    return { items }
+  }
+
+  private async getSchoolsByRegional(params: PaginationParams) {
+    const { reports } =
+      await this.performanceHistoryRepository.getDataReports(params)
+
+    const { exams } =
+      await this.performanceHistoryRepository.getExamsBySerieAndYear(params)
+
+    const serieNumber =
+      reports.length > 0 && reports[0].reportsSubjects.length > 0
+        ? reports[0].reportsSubjects[0].test?.TES_SER?.SER_NUMBER
+        : 1
+
+    const schoolsMap = new Map()
+
+    reports.forEach((report) => {
+      const schoolId = report.school?.ESC_ID
+      const schoolName = report.school?.ESC_NOME
+
+      if (!schoolId) return
+
+      if (!schoolsMap.has(schoolId)) {
+        schoolsMap.set(schoolId, {
+          id: schoolId,
+          name: schoolName,
+        })
+      }
+    })
+
+    const editionsMap = new Map()
+
+    reports.forEach((report) => {
+      const editionId = report.edition?.AVA_ID
+      const editionName = report.edition?.AVA_NOME
+
+      if (!editionsMap.has(editionId)) {
+        editionsMap.set(editionId, {
+          id: editionId,
+          name: editionName,
+          tests: [],
+        })
+      }
+    })
+
+    const items = []
+    for (const [editionId, edition] of editionsMap.entries()) {
+      const tests = []
+
+      for (const exam of exams) {
+        const data = []
+
+        for (const [schoolId, schoolData] of schoolsMap.entries()) {
+          const schoolReports = reports
+            .filter(
+              (r) =>
+                r.school?.ESC_ID === schoolId &&
+                r.edition?.AVA_ID === editionId,
+            )
+            .map((r) =>
+              r.reportsSubjects.find((rs) => rs.test.TES_ID === exam.TES_ID),
+            )
+            .filter(Boolean)
+
+          if (schoolReports.length === 0) continue
+
+          const avg = this.calculateAggregatedPerformance(
+            schoolReports,
+            exam.TES_DIS.DIS_TIPO,
+            serieNumber,
+          )
+
+          data.push({
+            id: schoolData.id,
+            name: schoolData.name,
+            avg,
+          })
+        }
+
+        if (data.length > 0) {
+          tests.push({
+            id: exam.TES_ID,
+            subject: exam.TES_DIS.DIS_NOME,
+            dis_tipo: exam.TES_DIS.DIS_TIPO,
+            data,
+          })
+        }
+      }
+
+      if (tests.length > 0) {
+        items.push({
+          id: edition.id,
+          name: edition.name,
+          tests,
+        })
+      }
+    }
+
+    return { items }
+  }
+
+  private async getSchoolClassesBySchool(params: PaginationParams) {
+    const { reports } =
+      await this.performanceHistoryRepository.getDataReports(params)
+
+    const { exams } =
+      await this.performanceHistoryRepository.getExamsBySerieAndYear(params)
+
+    const serieNumber =
+      reports.length > 0 && reports[0].reportsSubjects.length > 0
+        ? reports[0].reportsSubjects[0].test?.TES_SER?.SER_NUMBER
+        : 1
+
+    const schoolClassesMap = new Map()
+
+    reports.forEach((report) => {
+      const schoolClassId = report.schoolClass?.TUR_ID
+      const schoolClassName = report.schoolClass?.TUR_NOME
+
+      if (!schoolClassId) return
+
+      if (!schoolClassesMap.has(schoolClassId)) {
+        schoolClassesMap.set(schoolClassId, {
+          id: schoolClassId,
+          name: schoolClassName,
+        })
+      }
+    })
+
+    const editionsMap = new Map()
+
+    reports.forEach((report) => {
+      const editionId = report.edition?.AVA_ID
+      const editionName = report.edition?.AVA_NOME
+
+      if (!editionsMap.has(editionId)) {
+        editionsMap.set(editionId, {
+          id: editionId,
+          name: editionName,
+          tests: [],
+        })
+      }
+    })
+
+    const items = []
+    for (const [editionId, edition] of editionsMap.entries()) {
+      const tests = []
+
+      for (const exam of exams) {
+        const data = []
+
+        for (const [
+          schoolClassId,
+          schoolClassData,
+        ] of schoolClassesMap.entries()) {
+          const schoolClassReports = reports
+            .filter(
+              (r) =>
+                r.schoolClass?.TUR_ID === schoolClassId &&
+                r.edition?.AVA_ID === editionId,
+            )
+            .map((r) =>
+              r.reportsSubjects.find((rs) => rs.test.TES_ID === exam.TES_ID),
+            )
+            .filter(Boolean)
+
+          if (schoolClassReports.length === 0) continue
+
+          const avg = this.calculateAggregatedPerformance(
+            schoolClassReports,
+            exam.TES_DIS.DIS_TIPO,
+            serieNumber,
+          )
+
+          data.push({
+            id: schoolClassData.id,
+            name: schoolClassData.name,
+            avg,
+          })
+        }
+
+        if (data.length > 0) {
+          tests.push({
+            id: exam.TES_ID,
+            subject: exam.TES_DIS.DIS_NOME,
+            dis_tipo: exam.TES_DIS.DIS_TIPO,
+            data,
+          })
+        }
+      }
+
+      if (tests.length > 0) {
+        items.push({
+          id: edition.id,
+          name: edition.name,
+          tests,
+        })
+      }
+    }
+
+    return { items }
+  }
+
+  private async getStudentsBySchool(params: PaginationParams) {
     const data = await this.performanceHistoryRepository.getStudents(params)
 
     if (data?.items?.length === 0) {
@@ -38,8 +424,7 @@ export class PerformanceHistoryService {
     }
 
     const students = data.items
-
-    const { school: findSchool } = await this.getSchool(school)
+    const { school: findSchool } = await this.getSchool(params.school)
 
     const assessmentQueryBuilder = this.assessmentRepository
       .createQueryBuilder('Assessments')
@@ -47,18 +432,18 @@ export class PerformanceHistoryService {
         'Assessments.AVA_TES',
         'AVA_TES',
         'AVA_TES.TES_SER_ID = :serie',
-        { serie },
+        { serie: params.serie },
       )
       .leftJoinAndSelect('AVA_TES.TEMPLATE_TEST', 'TEMPLATE_TEST')
       .leftJoinAndSelect('AVA_TES.TES_DIS', 'TES_DIS')
       .leftJoin('AVA_TES.TES_SER', 'TES_SER', 'AVA_TES.TES_SER_ID = :serie', {
-        serie,
+        serie: params.serie,
       })
       .innerJoin('Assessments.AVA_AVM', 'AVA_AVM')
       .innerJoin('AVA_AVM.AVM_MUN', 'county', 'county.MUN_ID = :countyId', {
-        countyId: county,
+        countyId: params.county,
       })
-      .andWhere('Assessments.AVA_ANO = :year', { year })
+      .andWhere('Assessments.AVA_ANO = :year', { year: params.year })
       .andWhere('AVA_AVM.AVM_TIPO = :typeSchool', {
         typeSchool: findSchool?.ESC_TIPO,
       })
@@ -117,7 +502,7 @@ export class PerformanceHistoryService {
                     id: test.TES_ID,
                     subject: test.TES_DIS.DIS_NOME,
                     dis_tipo: test.TES_DIS.DIS_TIPO,
-                    students: STUDENTS_TEST,
+                    data: STUDENTS_TEST,
                   }
                 } else {
                   const STUDENTS_TEST = await Promise.all(
@@ -150,7 +535,7 @@ export class PerformanceHistoryService {
                     id: test.TES_ID,
                     subject: test.TES_DIS.DIS_NOME,
                     dis_tipo: test.TES_DIS.DIS_TIPO,
-                    students: STUDENTS_TEST,
+                    data: STUDENTS_TEST,
                   }
                 }
               }),
@@ -169,6 +554,10 @@ export class PerformanceHistoryService {
     return { ...data, items }
   }
 
+  private async getStudentsBySchoolClass(params: PaginationParams) {
+    return await this.getStudentsBySchool(params)
+  }
+
   async getSchool(schoolId: number) {
     const school = await this.connection.getRepository(School).findOne({
       where: {
@@ -184,41 +573,42 @@ export class PerformanceHistoryService {
   async generateCsv(paginationParams: PaginationParams, user: User) {
     const params = formatParamsByProfile(paginationParams, user)
 
-    const { items: students } =
-      await this.performanceHistoryRepository.getStudents({
-        ...params,
-        isCsv: true,
-      })
-
     const { items } = await this.handle(
       { ...paginationParams, isCsv: true },
       user,
     )
 
-    const { school } = await this.getSchool(params?.school)
+    const {
+      county,
+      municipalityOrUniqueRegionalId,
+      school,
+      schoolClass,
+      type,
+    } = params
 
-    const csvData = students.map((student) => {
-      const aux: any = {}
+    let entityLabel = ''
+    let typeKey = type
 
-      aux.Alunos = student.ALU_NOME
-      for (const item of items) {
-        item.tests.forEach((test) => {
-          const studentTest = test.students.find((x) => x.id === student.ALU_ID)
+    if (schoolClass || (school && type === 'student')) {
+      entityLabel = 'Aluno'
+      typeKey = 'student'
+    } else if (school && type === 'general') {
+      entityLabel = 'Turma'
+      typeKey = ''
+    } else if (municipalityOrUniqueRegionalId) {
+      entityLabel = 'Escola'
+      typeKey = ''
+    } else if (county) {
+      entityLabel = 'Regional'
+      typeKey = ''
+    } else {
+      throw new BadRequestException('Parâmetros insuficientes para gerar CSV.')
+    }
 
-          if (test.dis_tipo === 'Objetiva') {
-            aux[`[${test.subject}] ${item.name}`] = isNaN(studentTest.avg)
-              ? 'Não Informado'
-              : studentTest.avg + '%'
-          } else {
-            aux[`[${test.subject}] ${item.name}`] = LevelsText[studentTest.type]
-          }
-        })
-      }
-
-      return { escola: school?.ESC_NOME ?? 'N/A', ...aux }
-    })
+    const csvData = this.buildCsvData(items, typeKey, entityLabel)
 
     const parser = new Parser({
+      delimiter: ';',
       quote: ' ',
       withBOM: true,
     })
@@ -228,7 +618,43 @@ export class PerformanceHistoryService {
       return csv
     } catch (error) {
       console.log('error csv:', error.message)
+      throw new BadRequestException('Erro ao gerar CSV.')
     }
+  }
+
+  private buildCsvData(items: any[], type: string, entityLabel: string): any[] {
+    const csvData = []
+
+    for (const item of items) {
+      for (const test of item.tests) {
+        for (const entity of test.data) {
+          console.log(entity)
+          const row: any = {
+            Avaliacao: item.name,
+            Disciplina: test.subject,
+            Tipo: test.dis_tipo,
+          }
+
+          row[entityLabel] = entity.name
+
+          if (type === 'student') {
+            if (test.dis_tipo === SubjectTypeEnum.OBJETIVA) {
+              row.Desempenho = isNaN(entity.avg)
+                ? 'Não Informado'
+                : entity.avg + '%'
+            } else {
+              row.Desempenho = LevelsText[entity.type] || 'Não Informado'
+            }
+          } else {
+            row.Desempenho = entity.avg + '%'
+          }
+
+          csvData.push(row)
+        }
+      }
+    }
+
+    return csvData
   }
 }
 
