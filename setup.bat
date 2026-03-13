@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 REM Script de Setup e Inicializacao - SAEV Backend
 REM Execute este script para configurar e iniciar o backend automaticamente
 
@@ -113,6 +114,7 @@ echo.
 docker-compose up -d
 if %ERRORLEVEL% NEQ 0 (
     echo [ERRO] Falha ao iniciar MySQL
+    echo [INFO] Se a porta 3306 esta ocupada por outro MySQL, pare-o com: net stop MySQL
     pause
     exit /b 1
 )
@@ -144,16 +146,57 @@ echo.
 echo.
 
 echo ==========================================
-echo    Executando Scripts SQL
+echo    Iniciando Backend (primeira vez)
+echo ==========================================
+echo.
+echo [INFO] Iniciando servidor em background para executar as migrations...
+
+REM Iniciar backend em background para criar as tabelas via migrations
+start "SAEV-Backend" /B cmd /c "yarn start:dev > .backend-init.log 2>&1"
+
+echo [INFO] Aguardando backend criar as tabelas (migrations)...
+set /a RETRY_COUNT=0
+set /a MAX_RETRIES=120
+
+:wait_backend
+curl -s http://localhost:3003/api >nul 2>nul
+if %ERRORLEVEL% EQU 0 (
+    echo [OK] Backend esta pronto!
+    goto backend_ready
+)
+echo|set /p="."
+timeout /t 2 /nobreak >nul
+set /a RETRY_COUNT+=1
+if %RETRY_COUNT% LSS %MAX_RETRIES% goto wait_backend
+
+echo.
+echo [AVISO] Timeout aguardando backend. Tentando executar seeds mesmo assim...
+
+:backend_ready
+echo.
+echo.
+
+echo ==========================================
+echo    Executando Scripts SQL (Seeds)
 echo ==========================================
 echo.
 
 for %%f in (sql\*.sql) do (
     echo [INFO] Executando: %%~nxf
-    docker exec -i db mysql -uroot -papp abc_saev < "%%f" 2>nul
+    docker exec -i db mysql -uroot -papp saev < "%%f" 2>nul
+    if %ERRORLEVEL% NEQ 0 (
+        echo [AVISO] Falha ao executar %%~nxf - pode ser dependencia de dados faltantes
+    )
 )
-echo [OK] Scripts SQL executados
+echo [OK] Scripts SQL processados
 echo.
+
+REM Parar o processo background antes de iniciar em modo interativo
+echo [INFO] Parando instancia de background...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":3003 " ^| findstr "LISTENING"') do (
+    taskkill /F /PID %%p >nul 2>nul
+)
+timeout /t 3 /nobreak >nul
 
 echo ==========================================
 echo    Iniciando Backend
@@ -163,5 +206,5 @@ echo [INFO] O servidor sera iniciado em modo desenvolvimento...
 echo [INFO] Acesse a documentacao Swagger em: http://localhost:3003/api
 echo.
 
-REM Iniciar o servidor
+REM Iniciar o servidor em modo interativo
 call yarn start:dev

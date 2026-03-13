@@ -11,8 +11,8 @@ export default () => ({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     autoLoadEntities: true,
-    migrationsRun: true,
-    synchronize: false,
+    migrationsRun: process.env.DB_SYNC !== 'true',
+    synchronize: process.env.DB_SYNC === 'true',
     migrations: [
       path.join(__dirname, '..', '/database/migrations/**/*{.ts,.js}'),
     ],
