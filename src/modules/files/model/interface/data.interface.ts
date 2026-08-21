@@ -39,6 +39,7 @@ export interface ImportDataStudent {
   ALU_NUMERO: string
   ALU_COMPLEMENTO: string
   ALU_BAIRRO: string
+  ALU_MATRICULA_MUNICIPAL?: string
 
   ALU_ESC_INEP: string
   ALU_GEN: any

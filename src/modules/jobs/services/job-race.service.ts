@@ -10,6 +10,7 @@ import { Student } from 'src/modules/student/model/entities/student.entity'
 import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
 import { Skin } from 'src/modules/teacher/model/entities/skin.entity'
 import { Test } from 'src/modules/test/model/entities/test.entity'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { JobRaceRepository } from './repositories/job-race.repository'
@@ -82,9 +83,13 @@ export class JobRaceService {
                       ),
                   )
 
-                  const totalCorrects = ANSWERS_TEST?.reduce(
+                  const ANSWERS_VALID = ANSWERS_TEST?.filter(
+                    (a) => !a?.questionTemplate?.TEG_ANULADA,
+                  )
+
+                  const totalCorrects = ANSWERS_VALID?.reduce(
                     (prev: number, cur: StudentTestAnswer) => {
-                      if (cur.ATR_CERTO) {
+                      if (isAnswerCorrect(cur)) {
                         return prev + 1
                       }
                       return prev
@@ -94,8 +99,10 @@ export class JobRaceService {
 
                   return (
                     prev +
-                    (ANSWERS_TEST?.length
-                      ? Math.round((totalCorrects / ANSWERS_TEST?.length) * 100)
+                    (ANSWERS_VALID?.length
+                      ? Math.round(
+                          (totalCorrects / ANSWERS_VALID?.length) * 100,
+                        )
                       : 0)
                   )
                 },

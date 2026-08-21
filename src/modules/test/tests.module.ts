@@ -1,5 +1,7 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { JobsModule } from 'src/modules/jobs/jobs.module'
+import { AnswerKeyChangeLog } from 'src/modules/jobs/model/entities/answer-key-change-log.entity'
 import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { Serie } from 'src/modules/serie/model/entities/serie.entity'
 import { Student } from 'src/modules/student/model/entities/student.entity'
@@ -19,9 +21,12 @@ import { TestsService } from './service/tests.service'
       Subject,
       Student,
       StudentTestAnswer,
+      AnswerKeyChangeLog,
     ]),
+    forwardRef(() => JobsModule),
   ],
   providers: [TestsService],
   controllers: [TestsController],
+  exports: [TypeOrmModule],
 })
 export class TestsModule {}

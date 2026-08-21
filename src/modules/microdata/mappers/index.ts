@@ -71,6 +71,7 @@ export async function mapperFormatStudents(students: any[], csvStream: any) {
       ALU_ATIVO: student.ALU_ATIVO ? 'Sim' : 'Não',
       ALU_STATUS: student.ALU_STATUS,
       ALU_CPF: student.ALU_CPF ?? 'N/A',
+      ALU_MATRICULA_MUNICIPAL: student.ALU_MATRICULA_MUNICIPAL ?? '',
       PEL_NOME: student?.PEL_NOME ?? 'N/A',
       GEN_NOME: student?.GEN_NOME ?? 'N/A',
     })
@@ -106,6 +107,7 @@ export function mapperFormatInfrequency(
       ),
       ALU_ATIVO: schoolAbsence?.ALU_ATIVO ? 'Sim' : 'Não',
       ALU_CPF: schoolAbsence?.ALU_CPF ?? 'N/A',
+      ALU_MATRICULA_MUNICIPAL: schoolAbsence?.ALU_MATRICULA_MUNICIPAL ?? '',
       PEL_NOME: schoolAbsence?.PEL_NOME ?? 'N/A',
       GEN_NOME: schoolAbsence?.GEN_NOME ?? 'N/A',
       IFR_MES: schoolAbsence.IFR_MES,
@@ -141,6 +143,7 @@ export async function mapperFormatEvaluationData({
       TUR_PERIODO: studentTest?.TUR_PERIODO ?? 'N/A',
       ALU_ID: studentTest?.ALU_ID,
       ALU_NOME: studentTest?.ALU_NOME,
+      ALU_MATRICULA_MUNICIPAL: studentTest?.ALU_MATRICULA_MUNICIPAL ?? '',
       PEL_NOME: studentTest?.PEL_NOME ?? 'N/A',
       GEN_NOME: studentTest?.GEN_NOME ?? 'N/A',
       AVA_NOME: assessment.AVA_NOME,
@@ -163,6 +166,7 @@ export async function mapperFormatEvaluationData({
         ATR_CERTO: 'N/A',
         COD_DESCRITOR: 'N/A',
         TOP_DESCRITOR: 'N/A',
+        TEG_NIVEL: 'N/A',
       })
       continue
     }
@@ -174,13 +178,22 @@ export async function mapperFormatEvaluationData({
           (t) => t.TEG_ID === studentTestAnswer?.TEG_ID,
         )
       }
+      const isNullified = testTemplate?.TEG_ANULADA ?? false
       await stream.write({
         ...base,
         NR_QUESTAO: studentTestAnswer?.TEG_ID ?? 'N/A',
-        ATR_RESPOSTA: studentTestAnswer?.ATR_RESPOSTA,
-        ATR_CERTO: studentTestAnswer?.ATR_CERTO ? 1 : 0,
+        ATR_RESPOSTA: isNullified ? 'N/A' : studentTestAnswer?.ATR_RESPOSTA,
+        ATR_CERTO: isNullified
+          ? 'N/A'
+          : testTemplate?.TEG_RESPOSTA_CORRETA &&
+              studentTestAnswer?.ATR_RESPOSTA?.toUpperCase() ===
+                testTemplate.TEG_RESPOSTA_CORRETA.toUpperCase()
+            ? 1
+            : 0,
+        ANULADA: isNullified ? 'Sim' : 'Não',
         COD_DESCRITOR: testTemplate?.TEG_MTI?.MTI_CODIGO ?? 'N/A',
         TOP_DESCRITOR: testTemplate?.TEG_MTI?.MTI_MTO?.MTO_ID ?? 'N/A',
+        TEG_NIVEL: testTemplate?.TEG_NIVEL ?? 'N/A',
       })
     }
   }
@@ -227,6 +240,7 @@ export async function mapperFormatEvaluationDataStandardized({
         ATR_RESPOSTA: 'N/A',
         ATR_CERTO: 'N/A',
         MTI_CODIGO: 'N/A',
+        TEG_NIVEL: 'N/A',
       })
       continue
     }
@@ -239,13 +253,22 @@ export async function mapperFormatEvaluationDataStandardized({
           (t) => t.TEG_ID === studentTestAnswer?.TEG_ID,
         )
       }
+      const isNullified = testTemplate?.TEG_ANULADA ?? false
       await safeWrite(csvStream, {
         ...base,
         NR_QUESTAO: studentTestAnswer?.TEG_ID ?? 'N/A',
         TEG_ORDEM: testTemplate?.TEG_ORDEM ?? 'N/A',
-        ATR_RESPOSTA: studentTestAnswer?.ATR_RESPOSTA,
-        ATR_CERTO: studentTestAnswer?.ATR_CERTO ? 1 : 0,
+        ATR_RESPOSTA: isNullified ? 'N/A' : studentTestAnswer?.ATR_RESPOSTA,
+        ATR_CERTO: isNullified
+          ? 'N/A'
+          : testTemplate?.TEG_RESPOSTA_CORRETA &&
+              studentTestAnswer?.ATR_RESPOSTA?.toUpperCase() ===
+                testTemplate.TEG_RESPOSTA_CORRETA.toUpperCase()
+            ? 1
+            : 0,
+        ANULADA: isNullified ? 'Sim' : 'Não',
         MTI_CODIGO: testTemplate?.TEG_MTI?.MTI_CODIGO ?? 'N/A',
+        TEG_NIVEL: testTemplate?.TEG_NIVEL ?? 'N/A',
       })
     }
   }

@@ -5,13 +5,16 @@ import { validateStudentResultToken } from 'src/helpers/crypto'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { County } from 'src/modules/counties/model/entities/county.entity'
+import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
 import { Serie } from 'src/modules/serie/model/entities/serie.entity'
 import { Student } from 'src/modules/student/model/entities/student.entity'
 import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
+import { TestTemplate } from 'src/modules/test/model/entities/test-template.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { ReportEdition } from '../model/entities/report-edition.entity'
@@ -114,7 +117,6 @@ export class GeneralSynthesisService {
 
             const STUDENTS_TEST = studentsData.map(
               ({ student, studentTest }) => {
-
                 const ANSWERS_TEST = studentTest?.ANSWERS_TEST?.filter(
                   (arr, index, self) =>
                     index ===
@@ -125,19 +127,30 @@ export class GeneralSynthesisService {
                     ),
                 )
 
-                const STUDENTS_RIGHT = ANSWERS_TEST?.reduce((sum, cur) => {
-                  if (cur?.ATR_CERTO) {
-                    return sum + 1
-                  } else {
-                    return sum
-                  }
-                }, 0)
+                const ANSWERS_VALID = (ANSWERS_TEST ?? []).filter(
+                  (a: StudentTestAnswer) => !a?.questionTemplate?.TEG_ANULADA,
+                )
+
+                const STUDENTS_RIGHT = ANSWERS_VALID.reduce(
+                  (sum: number, cur: StudentTestAnswer) => {
+                    if (isAnswerCorrect(cur)) {
+                      return sum + 1
+                    } else {
+                      return sum
+                    }
+                  },
+                  0,
+                )
 
                 const quests = ANSWERS_TEST?.map((data) => {
                   return {
                     id: data.ATR_ID,
                     letter: data.ATR_RESPOSTA,
-                    type: data?.ATR_CERTO ? 'right' : 'wrong',
+                    type: data?.questionTemplate?.TEG_ANULADA
+                      ? 'nullified'
+                      : isAnswerCorrect(data)
+                        ? 'right'
+                        : 'wrong',
                     questionId: data?.questionTemplate?.TEG_ID,
                   }
                 })
@@ -147,9 +160,10 @@ export class GeneralSynthesisService {
                   name: student.ALU_NOME,
                   quests,
                   studentTest,
-                  avg: Math.round(
-                    (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
-                  ) || 0,
+                  avg:
+                    Math.round(
+                      (STUDENTS_RIGHT / ANSWERS_VALID?.length) * 100,
+                    ) || 0,
                 }
               },
             )
@@ -158,6 +172,7 @@ export class GeneralSynthesisService {
               return {
                 id: data?.TEG_ID,
                 TEG_ORDEM: data?.TEG_ORDEM,
+                TEG_ANULADA: data?.TEG_ANULADA ?? false,
                 cod: data?.TEG_MTI?.MTI_CODIGO,
                 description: data?.TEG_MTI?.MTI_ID
                   ? `${data?.TEG_MTI?.MTI_CODIGO} - ${data?.TEG_MTI?.MTI_DESCRITOR}`
@@ -171,7 +186,7 @@ export class GeneralSynthesisService {
               type: 'table',
 
               quests: {
-                total: descriptors.length,
+                total: descriptors.filter((d) => !d.TEG_ANULADA).length,
                 descriptors,
               },
               students: STUDENTS_TEST,
@@ -252,6 +267,7 @@ export class GeneralSynthesisService {
       school,
       stateRegionalId,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       stateId,
       schoolClass,
     } = params
@@ -286,7 +302,7 @@ export class GeneralSynthesisService {
               id = report.schoolClass?.TUR_ID
               name = report.schoolClass?.TUR_NOME
               level = 'schoolClass'
-            } else if (municipalityOrUniqueRegionalId) {
+            } else if (municipalityOrUniqueRegionalId || allCountyRegionals) {
               id = report.school?.ESC_ID
               name = report.school?.ESC_NOME
               type = report.school?.ESC_TIPO
@@ -585,27 +601,39 @@ export class GeneralSynthesisService {
               ),
           )
 
-          const STUDENTS_RIGHT = ANSWERS_TEST?.reduce((sum, cur) => {
-            if (cur?.ATR_CERTO) {
-              return sum + 1
-            } else {
-              return sum
-            }
-          }, 0)
+          const ANSWERS_VALID = (ANSWERS_TEST ?? []).filter(
+            (a: StudentTestAnswer) => !a?.questionTemplate?.TEG_ANULADA,
+          )
+
+          const STUDENTS_RIGHT = ANSWERS_VALID.reduce(
+            (sum: number, cur: StudentTestAnswer) => {
+              if (isAnswerCorrect(cur)) {
+                return sum + 1
+              } else {
+                return sum
+              }
+            },
+            0,
+          )
 
           const quests = ANSWERS_TEST?.map((data) => {
             return {
               id: data.ATR_ID,
               letter: data.ATR_RESPOSTA,
-              type: data?.ATR_CERTO ? 'right' : 'wrong',
+              type: data?.questionTemplate?.TEG_ANULADA
+                ? 'nullified'
+                : isAnswerCorrect(data)
+                  ? 'right'
+                  : 'wrong',
               questionId: data?.questionTemplate?.TEG_ID,
             }
           })
 
-          const descriptors = test.TEMPLATE_TEST.map((data) => {
+          const descriptors = test.TEMPLATE_TEST.map((data: TestTemplate) => {
             return {
               id: data?.TEG_ID,
               TEG_ORDEM: data?.TEG_ORDEM,
+              TEG_ANULADA: data?.TEG_ANULADA ?? false,
               cod: data?.TEG_MTI?.MTI_CODIGO,
               description: data?.TEG_MTI?.MTI_ID
                 ? `${data?.TEG_MTI?.MTI_CODIGO} - ${data?.TEG_MTI?.MTI_DESCRITOR}`
@@ -620,14 +648,12 @@ export class GeneralSynthesisService {
             student: {
               ...student,
               quests,
-              avg: STUDENTS_RIGHT
-                ? +Math.round(
-                    (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
-                  )
+              avg: ANSWERS_VALID.length
+                ? +Math.round((STUDENTS_RIGHT / ANSWERS_VALID.length) * 100)
                 : 0,
             },
             quests: {
-              total: descriptors.length,
+              total: descriptors.filter((d) => !d.TEG_ANULADA).length,
               descriptors,
             },
           }

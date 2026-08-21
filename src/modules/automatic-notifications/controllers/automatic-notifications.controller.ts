@@ -20,7 +20,7 @@ export class AutomaticNotificationsController {
   ) {}
 
   @Get('/')
-  // @Role([RoleProfile.ESCOLA])
+  @Role([RoleProfile.ESCOLA])
   findAll(
     @Query() params: PaginationAutomaticNotificationsParamsDto,
     @CurrentUser() user: User,

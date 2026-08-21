@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { Student } from 'src/modules/student/model/entities/student.entity'
 import { SendTutorMessageStatus } from 'src/modules/tutor-messages/entities/send-tutor-message.entity'
 import { ConversationWindowService } from 'src/modules/twilio/services/conversation-window.service'
-import { Repository } from 'typeorm'
+import { Connection, Repository } from 'typeorm'
 
 import { AutomaticNotificationSend } from '../entities/automatic-notification-send.entity'
 import { NotificationRuleMapper } from '../interfaces'
@@ -30,6 +31,7 @@ export class NotificationDuplicityService {
     @InjectRepository(AutomaticNotificationSend)
     private readonly automaticNotificationSendRepository: Repository<AutomaticNotificationSend>,
     private readonly conversationWindowService: ConversationWindowService,
+    private readonly connection: Connection,
   ) {}
 
   async isNotificationAlreadySent({
@@ -60,6 +62,16 @@ export class NotificationDuplicityService {
         data.phoneNumber,
       )
 
+    let hasResponsible = false
+    if (rule?.inAppActive) {
+      const student = await this.connection.getRepository(Student).findOne({
+        where: { ALU_ID: data.studentId },
+        select: ['ALU_ID', 'ALU_RES'],
+        relations: ['ALU_RES'],
+      })
+      hasResponsible = !!student?.ALU_RES
+    }
+
     const notification = this.automaticNotificationSendRepository.create({
       ruleId: rule.id,
       studentId: data.studentId,
@@ -76,8 +88,12 @@ export class NotificationDuplicityService {
             ? SendTutorMessageStatus.USUARIO_RECUSOU
             : SendTutorMessageStatus.PENDENTE
           : SendTutorMessageStatus.NAO_ENVIADO,
+      statusInApp:
+        rule?.inAppActive && hasResponsible
+          ? SendTutorMessageStatus.PENDENTE
+          : SendTutorMessageStatus.NAO_ENVIADO,
     })
 
-    return await this.automaticNotificationSendRepository.save(notification)
+    return this.automaticNotificationSendRepository.save(notification)
   }
 }

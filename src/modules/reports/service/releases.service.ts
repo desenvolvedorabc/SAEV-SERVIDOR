@@ -170,6 +170,7 @@ export class ReleasesService {
       school,
       schoolClass,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
     } = params
 
     let items = []
@@ -199,7 +200,7 @@ export class ReleasesService {
           general: Math.round(value / subjects.length),
         }
       })
-    } else if (municipalityOrUniqueRegionalId) {
+    } else if (municipalityOrUniqueRegionalId || allCountyRegionals) {
       items = reports?.map((reportEdition) => {
         const { grouped, filterSubjects, value, subjects } =
           this.formatDataForReport(reportEdition)
@@ -209,6 +210,7 @@ export class ReleasesService {
           classe: null,
           name: reportEdition.school.ESC_NOME,
           inep: reportEdition.school.ESC_INEP,
+          type: reportEdition.school.ESC_TIPO,
           grouped,
           math: 0,
           portuguese: 0,
@@ -351,7 +353,7 @@ export class ReleasesService {
       }, Object.create(null))
 
     const grouped = filterReportSubjects.reduce(
-      (acc, cur) => acc + cur.countTotalStudents,
+      (acc, cur) => acc + Number(cur.countTotalStudents),
       0,
     )
 

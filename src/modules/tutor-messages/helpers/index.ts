@@ -30,30 +30,46 @@ export function decideChannelStatus(counts: {
 export function decideFinalStatus(
   emailStatus: ChannelStatus,
   waStatus: ChannelStatus,
+  inAppStatus?: ChannelStatus,
 ): AggregatedTutorMessageStatus {
-  if (emailStatus === 'PENDENTE' || waStatus === 'PENDENTE') {
+  const statuses = [emailStatus, waStatus]
+  if (inAppStatus) statuses.push(inAppStatus)
+
+  if (statuses.some((s) => s === 'PENDENTE')) {
     return AggregatedTutorMessageStatus.PENDENTE
   }
 
-  if (emailStatus === 'SENT' && waStatus === 'SENT') {
+  if (statuses.every((s) => s === 'SENT')) {
     return AggregatedTutorMessageStatus.ENVIADO
   }
 
-  if (emailStatus === 'FALHA' && waStatus === 'FALHA') {
-    return AggregatedTutorMessageStatus.FALHA
-  }
-
-  if (emailStatus === 'NAO_ENVIADO' && waStatus === 'NAO_ENVIADO') {
+  if (statuses.every((s) => s === 'NAO_ENVIADO')) {
     return AggregatedTutorMessageStatus.NAO_ENVIADO
   }
 
-  if (emailStatus === 'FALHA' && waStatus === 'NAO_ENVIADO') {
-    return AggregatedTutorMessageStatus.FALHA
-  }
-
-  if (emailStatus === 'NAO_ENVIADO' && waStatus === 'FALHA') {
+  if (statuses.every((s) => s === 'FALHA' || s === 'NAO_ENVIADO')) {
     return AggregatedTutorMessageStatus.FALHA
   }
 
   return AggregatedTutorMessageStatus.PARCIALMENTE_ENVIADO
+}
+
+export function formatAverageTime(avgMinutes: number | null): string | null {
+  if (avgMinutes === null || avgMinutes === undefined || isNaN(avgMinutes)) {
+    return null
+  }
+
+  if (avgMinutes < 10) return '< 10 min'
+  if (avgMinutes < 60) return `${Math.round(avgMinutes)} min`
+
+  const totalMinutes = Math.round(avgMinutes)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (hours < 24) {
+    return `${hours}h ${String(minutes).padStart(2, '0')}min`
+  }
+
+  const days = Math.floor(hours / 24)
+  return `${days} dia${days > 1 ? 's' : ''}`
 }

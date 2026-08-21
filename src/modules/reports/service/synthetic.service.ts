@@ -9,12 +9,42 @@ import { School } from 'src/modules/school/model/entities/school.entity'
 import { SchoolClass } from 'src/modules/school-class/model/entities/school-class.entity'
 import { Serie } from 'src/modules/serie/model/entities/serie.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
+import {
+  QUESTION_LEVEL_LABELS,
+  UNCLASSIFIED_LEVEL_LABEL,
+} from 'src/shared/enums/question-level.enum'
+import {
+  buildQuestionLevelSummary,
+  QuestionLevelSummaryInput,
+} from 'src/utils/build-question-level-summary'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
 import { formatValueForPercentage } from 'src/utils/format-value-percentage'
 import { Connection } from 'typeorm'
 
 import { ReportSyntheticRepository } from '../repositories/synthetic.repository'
 import { EvolutionaryLineReadingService } from './evolutionary-line-reading.service'
+
+const syntheticCsvFields = [
+  'base_consulta',
+  'disciplina',
+  'questao',
+  'nivel',
+  'questao_correta',
+  'A',
+  'B',
+  'C',
+  'D',
+  '-',
+  'fluente_acerto',
+  'nao_fluente_acerto',
+  'frases_acerto',
+  'palavras_acerto',
+  'silabas_acerto',
+  'nao_leitor_acerto',
+  'nao_avaliado_acerto',
+  'nao_informado_acerto',
+  'descritor',
+]
 
 @Injectable()
 export class ReportSyntheticService {
@@ -46,6 +76,8 @@ export class ReportSyntheticService {
     }
 
     const items = report?.reportsSubjects?.map((reportSubject) => {
+      const levelSummaryInput: QuestionLevelSummaryInput[] = []
+
       const items = reportSubject.reportQuestions
         .map((reportQuestion) => {
           const totalPresentStudents =
@@ -109,10 +141,22 @@ export class ReportSyntheticService {
             ),
           }
 
+          const annulled = reportQuestion.question.TEG_ANULADA ?? false
+          const level = reportQuestion.question.TEG_NIVEL ?? null
+
+          levelSummaryInput.push({
+            level,
+            annulled,
+            totalCorrect: findQuestionCorrect?.totalCorrect ?? 0,
+            totalAnswers: totalPresentStudents,
+          })
+
           return {
             id: reportQuestion.question.TEG_ID,
             option: reportQuestion?.option_correct,
             order: reportQuestion.question.TEG_ORDEM,
+            TEG_ANULADA: annulled,
+            level,
             descriptor: reportQuestion.question.TEG_MTI.MTI_DESCRITOR,
             options: reportOptions,
             reportReadingCorrect,
@@ -120,15 +164,19 @@ export class ReportSyntheticService {
         })
         .sort((a, b) => a.order - b.order)
 
+      const { levelSummary, hasLevelClassification, annulledItemsExcluded } =
+        buildQuestionLevelSummary(levelSummaryInput)
+
       return {
         id: reportSubject.test.TES_ID,
         subject: reportSubject.test.TES_DIS.DIS_NOME,
         typeSubject: reportSubject.test.TES_DIS.DIS_TIPO,
+        hasLevelClassification,
+        annulledItemsExcluded,
+        levelSummary,
         items,
       }
     })
-
-    console.log(items)
 
     return {
       items,
@@ -212,6 +260,9 @@ export class ReportSyntheticService {
           base_consulta,
           disciplina: subject?.subject ?? '',
           questao: question.order + 1,
+          nivel: question.level
+            ? QUESTION_LEVEL_LABELS[question.level]
+            : UNCLASSIFIED_LEVEL_LABEL,
           questao_correta: question.option,
           A: `${questionA?.value}%`,
           B: `${questionB?.value}%`,
@@ -236,9 +287,13 @@ export class ReportSyntheticService {
       data.push({})
     }
 
+    // quote padrão ("): o antigo `quote: ' '` duplicava todo espaço interno e
+    // deixava vírgulas dos descritores quebrarem a linha em colunas extras.
+    // `fields` garante a ordem das colunas mesmo quando não há resultados.
     const parser = new Parser({
-      quote: ' ',
+      fields: syntheticCsvFields,
       withBOM: true,
+      delimiter: ',',
     })
 
     try {

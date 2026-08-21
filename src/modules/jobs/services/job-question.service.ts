@@ -357,7 +357,7 @@ export class JobQuestionService {
             TES_ID: testId,
           },
         },
-        select: ['TEG_ID', 'TEG_RESPOSTA_CORRETA'],
+        select: ['TEG_ID', 'TEG_RESPOSTA_CORRETA', 'TEG_ANULADA'],
       })
 
     return {

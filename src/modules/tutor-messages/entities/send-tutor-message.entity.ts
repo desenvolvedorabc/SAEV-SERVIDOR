@@ -45,6 +45,13 @@ export class SendTutorMessage {
   })
   statusWhatsapp: SendTutorMessageStatus
 
+  @Column({
+    type: 'enum',
+    enum: SendTutorMessageStatus,
+    default: SendTutorMessageStatus.PENDENTE,
+  })
+  statusInApp: SendTutorMessageStatus
+
   @Column({ type: 'int', nullable: false })
   studentId: number
 

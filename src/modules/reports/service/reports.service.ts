@@ -184,33 +184,69 @@ export class ReportsService {
     filter: DeepPartial<ReportEdition>,
     relations = [
       'reportsSubjects',
+      'reportsSubjects.test',
       'reports_descriptors',
+      'reports_descriptors.test',
       'reports_not_evaluated',
+      'reports_not_evaluated.test',
     ],
+    affectedTestIds?: number[],
   ) {
+    const effectiveRelations = affectedTestIds?.length
+      ? [
+          ...new Set([
+            ...relations,
+            ...relations
+              .filter((r) =>
+                [
+                  'reportsSubjects',
+                  'reports_descriptors',
+                  'reports_not_evaluated',
+                ].includes(r),
+              )
+              .map((r) => `${r}.test`),
+          ]),
+        ]
+      : relations
+
     const reportEdition = await this.reportEditionRepository.findOne({
       where: {
         edition: { AVA_ID: assessmentId },
         ...filter,
       },
-      relations,
+      relations: effectiveRelations,
     })
 
     if (reportEdition) {
+      const shouldDelete = (testId: number | undefined) =>
+        !affectedTestIds?.length ||
+        (testId !== undefined && affectedTestIds.includes(testId))
+
       if (reportEdition?.reports_descriptors?.length) {
-        await this.reportDescriptorRepository.remove(
-          reportEdition.reports_descriptors,
+        const toRemove = reportEdition.reports_descriptors.filter((d) =>
+          shouldDelete(d.test?.TES_ID),
         )
+        if (toRemove.length) {
+          await this.reportDescriptorRepository.remove(toRemove)
+        }
       }
 
       if (reportEdition?.reportsSubjects?.length) {
-        await this.reportSubjectRepository.remove(reportEdition.reportsSubjects)
+        const toRemove = reportEdition.reportsSubjects.filter((s) =>
+          shouldDelete(s.test?.TES_ID),
+        )
+        if (toRemove.length) {
+          await this.reportSubjectRepository.remove(toRemove)
+        }
       }
 
       if (reportEdition?.reports_not_evaluated?.length) {
-        await this.reportNotEvaluatedRepository.remove(
-          reportEdition.reports_not_evaluated,
+        const toRemove = reportEdition.reports_not_evaluated.filter((n) =>
+          shouldDelete(n.test?.TES_ID),
         )
+        if (toRemove.length) {
+          await this.reportNotEvaluatedRepository.remove(toRemove)
+        }
       }
 
       return reportEdition

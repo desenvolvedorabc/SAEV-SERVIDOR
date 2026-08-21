@@ -1,4 +1,5 @@
 import { HeadquarterTopicItem } from 'src/modules/headquarters/model/entities/headquarter-topic-item.entity'
+import { QuestionLevel } from 'src/shared/enums/question-level.enum'
 import {
   Column,
   CreateDateColumn,
@@ -31,6 +32,18 @@ export class TestTemplate {
     type: Number,
   })
   TEG_ORDEM: number
+
+  @Column({ type: 'boolean', default: false })
+  TEG_ANULADA!: boolean
+
+  @Column({
+    name: 'TEG_NIVEL',
+    type: 'enum',
+    enum: QuestionLevel,
+    nullable: true,
+    default: null,
+  })
+  TEG_NIVEL: QuestionLevel | null
 
   @Column({ nullable: true, unique: true })
   TEG_OLD_ID: number

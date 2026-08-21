@@ -19,8 +19,9 @@ export class JobDescriptorsRepository {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
-    return this.reportEditionsRepository
+    const qb = this.reportEditionsRepository
       .createQueryBuilder('report_edition')
       .select([
         'report_edition.editionAVAID as assessmentId',
@@ -44,6 +45,14 @@ export class JobDescriptorsRepository {
       .andWhere('REGIONAL.countyId = :countyId', { countyId })
       .andWhere('REGIONAL.active IS TRUE')
       .andWhere('report_edition.editionAVAID = :assessmentId', { assessmentId })
+
+    if (affectedTestIds?.length) {
+      qb.andWhere('report_descriptor.testTESID IN (:...affectedTestIds)', {
+        affectedTestIds,
+      })
+    }
+
+    return qb
       .groupBy(
         'report_descriptor.testTESID, REGIONAL.countyId, report_edition.editionAVAID, report_descriptor.descriptorMTIID',
       )
@@ -54,8 +63,9 @@ export class JobDescriptorsRepository {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
-    return this.reportEditionsRepository
+    const qb = this.reportEditionsRepository
       .createQueryBuilder('REPORT_EDITION')
       .select([
         'REPORT_EDITION.editionAVAID as assessmentId',
@@ -78,6 +88,14 @@ export class JobDescriptorsRepository {
       )
       .where('REPORT_EDITION.type = :type', { type })
       .andWhere('REPORT_EDITION.editionAVAID = :assessmentId', { assessmentId })
+
+    if (affectedTestIds?.length) {
+      qb.andWhere('report_descriptor.testTESID IN (:...affectedTestIds)', {
+        affectedTestIds,
+      })
+    }
+
+    return qb
       .groupBy(
         'report_descriptor.testTESID, TURMA.TUR_ESC_ID, REPORT_EDITION.editionAVAID, report_descriptor.descriptorMTIID',
       )
@@ -88,8 +106,9 @@ export class JobDescriptorsRepository {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
-    return this.reportEditionsRepository
+    const qb = this.reportEditionsRepository
       .createQueryBuilder('REPORT_EDITION')
       .select([
         'REPORT_EDITION.editionAVAID as assessmentId',
@@ -113,6 +132,14 @@ export class JobDescriptorsRepository {
       .andWhere('ESCOLA.ESC_MUN_ID = :countyId', { countyId })
       .andWhere('REPORT_EDITION.type = :type', { type })
       .andWhere('REPORT_EDITION.editionAVAID = :assessmentId', { assessmentId })
+
+    if (affectedTestIds?.length) {
+      qb.andWhere('report_descriptor.testTESID IN (:...affectedTestIds)', {
+        affectedTestIds,
+      })
+    }
+
+    return qb
       .groupBy(
         'report_descriptor.testTESID, ESCOLA.regionalId, REPORT_EDITION.editionAVAID, report_descriptor.descriptorMTIID',
       )

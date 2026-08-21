@@ -110,6 +110,18 @@ export class ReleasesRepository {
         .andWhere('school.regionalId = :municipalityOrUniqueRegionalId', {
           municipalityOrUniqueRegionalId,
         })
+    } else if (paginationParams.allCountyRegionals && county) {
+      queryBuilder
+        .addSelect([
+          'school.ESC_ID',
+          'school.ESC_NOME',
+          'school.ESC_TIPO',
+          'school.ESC_INEP',
+        ])
+        .innerJoin('ReportEdition.school', 'school')
+        .innerJoin('school.ESC_MUN', 'county')
+        .andWhere('county.MUN_ID = :countyId', { countyId: county })
+        .andWhere('school.regionalId IS NOT NULL')
     } else if (county) {
       queryBuilder
         .addSelect(['regional.id', 'regional.name'])

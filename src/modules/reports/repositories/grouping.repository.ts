@@ -65,15 +65,15 @@ export class ReportGroupingRepository {
       })
     }
 
-    if (school) {
-      queryBuilder.andWhere('schoolClass.TUR_ESC = :school', {
-        school,
-      })
-    }
-
     if (serie) {
       queryBuilder.andWhere('schoolClass.TUR_SER = :serie', {
         serie,
+      })
+    }
+
+    if (school) {
+      queryBuilder.andWhere('schoolClass.TUR_ESC = :school', {
+        school,
       })
     } else if (municipalityOrUniqueRegionalId) {
       queryBuilder.andWhere(
@@ -364,6 +364,68 @@ export class ReportGroupingRepository {
       })
       .andWhere('School.ESC_ATIVO = 1')
       .andWhere('School.ESC_TIPO = :typeSchool', { typeSchool })
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(School.ESC_NOME LIKE :search OR School.ESC_INEP LIKE :search)',
+        { search: `%${search}%` },
+      )
+    }
+
+    if (verifyProfileForState && typeSchool === TypeSchoolEnum.MUNICIPAL) {
+      queryBuilder.andWhere('county.MUN_COMPARTILHAR_DADOS IS TRUE')
+    }
+
+    const data = await paginateData(+page, +limit, queryBuilder)
+
+    const formatData = await Promise.all(
+      data?.items?.map(async (mapSchool) => {
+        const { totalGrouped, totalStudents, totalNotGrouped } =
+          await this.getTotalStudents({
+            ...params,
+            school: mapSchool.ESC_ID,
+          })
+
+        return {
+          ...mapSchool,
+          TOTAL_ALUNOS: totalStudents,
+          TOTAL_ENTURMADO: totalGrouped,
+          TOTAL_NAO_ENTURMADO: totalNotGrouped,
+        }
+      }),
+    )
+
+    return {
+      ...data,
+      items: formatData,
+    }
+  }
+
+  async getGroupingByAllMunicipality(params: PaginationParams) {
+    const {
+      page,
+      limit,
+      county,
+      order,
+      search,
+      typeSchool,
+      verifyProfileForState,
+    } = params
+
+    const queryBuilder = this.schoolRepository
+      .createQueryBuilder('School')
+      .select([
+        'School.ESC_ID',
+        'School.ESC_NOME',
+        'School.ESC_INEP',
+        'School.ESC_TIPO',
+      ])
+      .innerJoin('School.ESC_MUN', 'county')
+      .orderBy('School.ESC_NOME', order)
+      .where('county.MUN_ID = :county', { county })
+      .andWhere('School.ESC_ATIVO = 1')
+      .andWhere('School.ESC_TIPO = :typeSchool', { typeSchool })
+      .andWhere('School.regionalId IS NOT NULL')
 
     if (search) {
       queryBuilder.andWhere(

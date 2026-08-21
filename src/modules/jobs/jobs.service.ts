@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm'
 import * as Bluebird from 'bluebird'
 import { sendEmail } from 'src/helpers/sendMail'
 import { SchoolClass } from 'src/modules/school-class/model/entities/school-class.entity'
 import { Student } from 'src/modules/student/model/entities/student.entity'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { Assessment } from '../assessment/model/entities/assessment.entity'
@@ -20,6 +22,7 @@ import { Test } from '../test/model/entities/test.entity'
 import { StartJobWithFiltersDto } from './dto/start-job-with-filters.dto'
 import { Job as SAEVJob } from './job.entity'
 import { JobType } from './job-type.enum'
+import { JobStatus } from './model/enums/job-status.enum'
 import { JobDescriptorsService } from './services/job-descriptor.service'
 import { JobNotEvaluatedService } from './services/job-not-evaluated.service'
 import { JobQuestionService } from './services/job-question.service'
@@ -28,6 +31,8 @@ import { JobSubjectService } from './services/job-subject.service'
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name)
+
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
@@ -44,6 +49,7 @@ export class JobsService {
     private readonly jobRaceService: JobRaceService,
     private readonly jobDescriptorsService: JobDescriptorsService,
     private readonly jobQuestionService: JobQuestionService,
+    private readonly configService: ConfigService,
   ) {}
 
   async startJobWithFilters({
@@ -115,11 +121,7 @@ export class JobsService {
     } catch (e) {
       newJobHistory.bullId = 'ERROR'
       await this.jobsRepository.save(newJobHistory)
-      await sendEmail(
-        'carlos.nunes@going2.com.br',
-        'Saev | Houve uma falha no JOB',
-        `${e}`,
-      )
+      await this.notifyFailure(e)
     }
   }
 
@@ -129,6 +131,7 @@ export class JobsService {
       assessmentId: 0,
       countyId: 0,
       jobType: JobType.JOB_FULL,
+      status: JobStatus.RUNNING,
       startDate: new Date(),
     })
 
@@ -188,17 +191,17 @@ export class JobsService {
         )
       }
 
+      newJobHistory.status = JobStatus.DONE
       newJobHistory.endDate = new Date()
       await this.jobsRepository.save(newJobHistory)
     } catch (e) {
-      newJobHistory.bullId = 'ERROR'
+      newJobHistory.status = JobStatus.FAILED
+      newJobHistory.endDate = new Date()
+      newJobHistory.errorMessage =
+        (e instanceof Error ? e.message : String(e)) ?? String(e)
       await this.jobsRepository.save(newJobHistory)
 
-      await sendEmail(
-        'carlos.nunes@going2.com.br',
-        'Saev | Houve uma falha no JOB',
-        `${e}`,
-      )
+      await this.notifyFailure(e)
     }
   }
 
@@ -206,23 +209,32 @@ export class JobsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     await this.reportsService.upsertReportEditionByAssessmentId(
       assessmentId,
       { county: { MUN_ID: countyId }, type },
       ['reportsSubjects', 'reports_descriptors', 'reports_not_evaluated'],
+      affectedTestIds,
     )
 
-    await this.jobSubjectService.generateByCounty(assessmentId, countyId, type)
+    await this.jobSubjectService.generateByCounty(
+      assessmentId,
+      countyId,
+      type,
+      affectedTestIds,
+    )
     await this.jobDescriptorsService.generateByCounty(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
     await this.jobNotEvaluatedService.generateByCounty(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
   }
 
@@ -230,17 +242,25 @@ export class JobsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
-    await this.jobSubjectService.generateBySchool(assessmentId, countyId, type)
+    await this.jobSubjectService.generateBySchool(
+      assessmentId,
+      countyId,
+      type,
+      affectedTestIds,
+    )
     await this.jobDescriptorsService.generateBySchool(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
     await this.jobNotEvaluatedService.generateBySchool(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
   }
 
@@ -248,6 +268,7 @@ export class JobsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const regionals = await this.connection
       .getRepository(Regional)
@@ -262,6 +283,7 @@ export class JobsService {
           assessmentId,
           { regionalId: regional.id, type },
           ['reportsSubjects', 'reports_descriptors', 'reports_not_evaluated'],
+          affectedTestIds,
         )
       }),
     )
@@ -271,23 +293,32 @@ export class JobsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
-    await this.deleteReportEditionsRegional(assessmentId, countyId, type)
+    await this.deleteReportEditionsRegional(
+      assessmentId,
+      countyId,
+      type,
+      affectedTestIds,
+    )
 
     await this.jobSubjectService.generateByMunicipalityRegional(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
     await this.jobDescriptorsService.generateByMunicipalityRegional(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
     await this.jobNotEvaluatedService.generateByMunicipalityRegional(
       assessmentId,
       countyId,
       type,
+      affectedTestIds,
     )
   }
 
@@ -402,6 +433,8 @@ export class JobsService {
         'ALUNO.ALU_ID',
         'ALU_PEL.PEL_ID',
         'questionTemplate.TEG_ID',
+        'questionTemplate.TEG_RESPOSTA_CORRETA',
+        'questionTemplate.TEG_ANULADA',
         'TEG_MTI.MTI_ID',
       ])
       .innerJoin(
@@ -502,9 +535,13 @@ export class JobsService {
                   ),
               )
 
-              const totalCorrects = ANSWERS_TEST?.reduce(
+              const ANSWERS_VALID = ANSWERS_TEST?.filter(
+                (a) => !a?.questionTemplate?.TEG_ANULADA,
+              )
+
+              const totalCorrects = ANSWERS_VALID?.reduce(
                 (prev: number, cur: StudentTestAnswer) => {
-                  if (cur.ATR_CERTO) {
+                  if (isAnswerCorrect(cur)) {
                     return prev + 1
                   }
                   return prev
@@ -514,8 +551,8 @@ export class JobsService {
 
               return (
                 prev +
-                (ANSWERS_TEST.length
-                  ? Math.round((totalCorrects / ANSWERS_TEST.length) * 100)
+                (ANSWERS_VALID.length
+                  ? Math.round((totalCorrects / ANSWERS_VALID.length) * 100)
                   : 0)
               )
             },
@@ -620,5 +657,31 @@ export class JobsService {
         schoolClassId: schoolClass?.TUR_ID,
       }),
     ])
+  }
+
+  private async notifyFailure(e: unknown): Promise<void> {
+    const message = e instanceof Error ? e.message : String(e)
+    const raw =
+      this.configService.get<string>('REPROCESS_FAILURE_NOTIFICATION_EMAIL') ??
+      ''
+    const recipients = raw
+      .split(',')
+      .map((s: string) => s.trim())
+      .filter(Boolean)
+    if (!recipients.length) return
+
+    await Promise.all(
+      recipients.map(async (to) => {
+        try {
+          await sendEmail(to, 'Saev | Houve uma falha no JOB', message)
+        } catch (mailErr) {
+          this.logger.error(
+            `Failed to send failure email to ${to}: ${
+              mailErr instanceof Error ? mailErr.message : String(mailErr)
+            }`,
+          )
+        }
+      }),
+    )
   }
 }

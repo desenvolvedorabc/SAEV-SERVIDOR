@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { PushNotificationService } from 'src/modules/push-notification/push-notification.service'
+import { ResponsibleNotification } from 'src/modules/responsibles/entities/responsible-notification.entity'
+import { ResponsibleNotificationType } from 'src/modules/responsibles/enums/responsible-notification.enum'
 import { ConversationWindowStatus } from 'src/modules/twilio/entities/whatsapp-conversation-window.entity'
 import { ConversationWindowService } from 'src/modules/twilio/services/conversation-window.service'
 import { EmailService } from 'src/modules/twilio/services/email.service'
 import { WhatsappService } from 'src/modules/twilio/services/whatsapp.service'
-import { Repository } from 'typeorm'
+import { Connection, Repository } from 'typeorm'
 
+import { newMessageNotificationTutores } from '../constants'
 import {
   SendTutorMessage,
   SendTutorMessageStatus,
@@ -17,12 +21,15 @@ interface ISendTutorMessage {
   studentId: number
   statusEmail: SendTutorMessageStatus
   statusWhatsapp: SendTutorMessageStatus
+  statusInApp: SendTutorMessageStatus
   ALU_EMAIL: string
   ALU_WHATSAPP: string
   ALU_NOME: string
+  ALU_RES_ID: number
   ESC_NOME: string
   title: string
   content: string
+  tutorMessageId: number
 }
 
 @Injectable()
@@ -40,6 +47,10 @@ export class SendTutorMessagesCronJob {
     private readonly emailService: EmailService,
 
     private readonly conversationWindowService: ConversationWindowService,
+
+    private readonly connection: Connection,
+
+    private readonly pushNotificationService: PushNotificationService,
   ) {}
 
   async processSendTutorMessagesPending() {
@@ -53,18 +64,21 @@ export class SendTutorMessagesCronJob {
         'SendTutorMessage.tutorMessageId as tutorMessageId',
         'SendTutorMessage.statusEmail as statusEmail',
         'SendTutorMessage.statusWhatsapp as statusWhatsapp',
+        'SendTutorMessage.statusInApp as statusInApp',
         'Student.ALU_EMAIL as ALU_EMAIL',
         'Student.ALU_WHATSAPP as ALU_WHATSAPP',
+        'Student.ALU_RES_ID as ALU_RES_ID',
         'Student.ALU_NOME as ALU_NOME',
         'School.ESC_NOME as ESC_NOME',
       ])
       .innerJoin('SendTutorMessage.student', 'Student')
       .innerJoin('Student.ALU_ESC', 'School')
       .where(
-        '(SendTutorMessage.statusEmail = :statusEmail OR SendTutorMessage.statusWhatsapp = :statusWhatsapp)',
+        '(SendTutorMessage.statusEmail = :statusEmail OR SendTutorMessage.statusWhatsapp = :statusWhatsapp OR SendTutorMessage.statusInApp = :statusInApp)',
         {
           statusEmail: SendTutorMessageStatus.PENDENTE,
           statusWhatsapp: SendTutorMessageStatus.PENDENTE,
+          statusInApp: SendTutorMessageStatus.PENDENTE,
         },
       )
       .limit(BATCH_SIZE)
@@ -94,6 +108,16 @@ export class SendTutorMessagesCronJob {
       if (item.statusWhatsapp === SendTutorMessageStatus.PENDENTE) {
         promises.push(
           this.processWhatsapp({
+            ...item,
+            title: tutorMessage.title,
+            content: tutorMessage.content,
+          }),
+        )
+      }
+
+      if (item.statusInApp === SendTutorMessageStatus.PENDENTE) {
+        promises.push(
+          this.processInApp({
             ...item,
             title: tutorMessage.title,
             content: tutorMessage.content,
@@ -189,6 +213,65 @@ export class SendTutorMessagesCronJob {
       await this.sendTutorMessageRepository.update(
         { id: data.id },
         { statusWhatsapp: SendTutorMessageStatus.FALHOU },
+      )
+    }
+  }
+
+  private async processInApp(data: ISendTutorMessage): Promise<void> {
+    try {
+      if (!data.ALU_RES_ID) {
+        await this.sendTutorMessageRepository.update(
+          { id: data.id },
+          { statusInApp: SendTutorMessageStatus.NAO_ENVIADO },
+        )
+        return
+      }
+
+      const notification = this.connection
+        .getRepository(ResponsibleNotification)
+        .create({
+          responsibleId: data.ALU_RES_ID,
+          studentId: data.studentId,
+          type: ResponsibleNotificationType.COMUNICACAO,
+          subtype: null,
+          title: data.title,
+          content: data.content,
+          tutorMessageId: data.tutorMessageId,
+        })
+
+      const saved = await this.connection
+        .getRepository(ResponsibleNotification)
+        .save(notification)
+
+      await this.sendTutorMessageRepository.update(
+        { id: data.id },
+        { statusInApp: SendTutorMessageStatus.ENTREGUE },
+      )
+
+      this.pushNotificationService
+        .sendToResponsible(
+          data.ALU_RES_ID,
+          data.title,
+          newMessageNotificationTutores,
+          {
+            notificationId: saved.id,
+            type: 'COMUNICACAO',
+          },
+        )
+        .catch((err) =>
+          this.logger.warn(
+            `Push falhou para ${data.ALU_NOME}, notificação in-app já salva`,
+            err,
+          ),
+        )
+    } catch (error) {
+      this.logger.error(
+        `Erro ao processar in-app para ${data.ALU_NOME}:`,
+        error,
+      )
+      await this.sendTutorMessageRepository.update(
+        { id: data.id },
+        { statusInApp: SendTutorMessageStatus.FALHOU },
       )
     }
   }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
+import { ResponsiblesModule } from 'src/modules/responsibles/responsibles.module'
 import { SchoolClassStudent } from 'src/modules/school-class/model/entities/school-class-student.entity'
 import { SchoolClassModule } from 'src/modules/school-class/school-class.module'
 import { Pcd } from 'src/shared/model/entities/pcd.entity'
@@ -13,6 +14,7 @@ import { StudentService } from './service/student.service'
   imports: [
     TypeOrmModule.forFeature([Student, Pcd, Assessment, SchoolClassStudent]),
     SchoolClassModule,
+    ResponsiblesModule,
   ],
   providers: [StudentService],
   controllers: [StudentController],

@@ -18,6 +18,7 @@ export interface NotificationRuleMapper {
   typeSchool: TypeSchoolEnum
   whatsappActive: boolean
   emailActive: boolean
+  inAppActive: boolean
   date: Date
 }
 
@@ -25,11 +26,13 @@ export interface IAutomaticNotificationSend {
   id: number
   statusEmail: SendTutorMessageStatus
   statusWhatsapp: SendTutorMessageStatus
+  statusInApp: SendTutorMessageStatus
   ruleType: NotificationRuleType
   data: DataAutomaticNotificationSend
   ALU_ID: number
   ALU_EMAIL: string
   ALU_WHATSAPP: string
+  ALU_RES_ID: number
   ALU_NOME: string
   title: string
   content: string

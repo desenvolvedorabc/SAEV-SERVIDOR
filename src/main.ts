@@ -1,4 +1,5 @@
-// import './tracing'
+// import './tracing' -- desativado no repo aberto: requer credenciais GCP (Cloud Trace)
+
 import { Logger, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -40,14 +41,16 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
   app.enableCors()
 
-  const options = new DocumentBuilder()
-    .setTitle('SAEV API')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build()
+  if (process.env.NODE_ENV !== 'production') {
+    const options = new DocumentBuilder()
+      .setTitle('SAEV API')
+      .setVersion('1.0.0')
+      .addBearerAuth()
+      .build()
 
-  const document = SwaggerModule.createDocument(app, options)
-  SwaggerModule.setup('v1/swagger', app, document)
+    const document = SwaggerModule.createDocument(app, options)
+    SwaggerModule.setup('v1/swagger', app, document)
+  }
 
   const logger = new Logger('bootstrap')
   const port = process.env.PORT || 8080

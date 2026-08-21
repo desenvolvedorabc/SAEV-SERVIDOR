@@ -1,180 +1,57 @@
+import { AreaEnum } from 'src/shared/enums/area.enum'
+
 interface IArea {
-  name: string
+  name: AreaEnum
   description: string
 }
 
 export const areasData: IArea[] = [
-  {
-    name: 'ALU',
-    description: 'Alunos',
-  },
-  {
-    name: 'ANO_LET',
-    description: 'Ano Letivo',
-  },
-  {
-    name: 'AVA_ON',
-    description: 'Avaliação Online',
-  },
-  {
-    name: 'AVA',
-    description: 'Avaliações',
-  },
-  {
-    name: 'DESC',
-    description: 'Descritores',
-  },
-  {
-    name: 'DISC',
-    description: 'Disciplinas',
-  },
-  {
-    name: 'EDI',
-    description: 'Edições',
-  },
-  {
-    name: 'ENT_ALU',
-    description: 'Enturmar Alunos',
-  },
-  {
-    name: 'ENTU',
-    description: 'Enturmação',
-  },
-  {
-    name: 'ESC',
-    description: 'Escolas',
-  },
-  {
-    name: 'EVO_LEI',
-    description: 'Evolução de Leitura',
-  },
-  {
-    name: 'EXP_DAD',
-    description: 'Exportar Microdados',
-  },
-  {
-    name: 'HOME',
-    description: 'Home',
-  },
-  {
-    name: 'IMP_EXP',
-    description: 'Importar/Exportar Dados',
-  },
-  {
-    name: 'INF',
-    description: 'Infrequência',
-  },
-  {
-    name: 'REL_IFR',
-    description: 'Infrequência',
-  },
-  {
-    name: 'JOR_PED',
-    description: 'Jornadas Pedagógicas',
-  },
-  {
-    name: 'LANC',
-    description: 'Lançamentos',
-  },
-  {
-    name: 'LAN_RES',
-    description: 'Lançar Resultados',
-  },
-  {
-    name: 'LIN_EVO',
-    description: 'Linha Evolutiva',
-  },
-  {
-    name: 'LOG_SIS',
-    description: 'Logs do Sistemas',
-  },
-  {
-    name: 'MAT_REF',
-    description: 'Matriz de Referência',
-  },
-  {
-    name: 'MEN',
-    description: 'Mensagens',
-  },
-  {
-    name: 'MCO',
-    description: 'Minha Conta',
-  },
-  {
-    name: 'MUN',
-    description: 'Municípios',
-  },
-  {
-    name: 'NIV_DES',
-    description: 'Nível de Desempenho',
-  },
-  {
-    name: 'PER_ACES',
-    description: 'Perfis de Acesso',
-  },
-  {
-    name: 'PRO',
-    description: 'Professores',
-  },
-  {
-    name: 'SIN_TEST',
-    description: 'Relatório Sintético de Testes',
-  },
-  {
-    name: 'REL_COR',
-    description: 'Relatório de Cor e Raça',
-  },
-  {
-    name: 'REL_NAL',
-    description: 'Relatório de Não Avaliados',
-  },
-  {
-    name: 'REL',
-    description: 'Relatórios',
-  },
-
-  {
-    name: 'REL_EXT',
-    description: 'Relatórios Externos',
-  },
-  {
-    name: 'SER',
-    description: 'Séries',
-  },
-  {
-    name: 'SINT_GER',
-    description: 'Síntese Geral',
-  },
-  {
-    name: 'AI_ASSIST',
-    description: 'Assistente de IA',
-  },
-  {
-    name: 'TES',
-    description: 'Testes',
-  },
-  {
-    name: 'TRF_ALU',
-    description: 'Transferir Alunos',
-  },
-  {
-    name: 'TUR',
-    description: 'Turmas',
-  },
-  {
-    name: 'USU',
-    description: 'Usuários',
-  },
-  {
-    name: 'REG_UNI',
-    description: 'Regional Única',
-  },
-  {
-    name: 'REG_EST',
-    description: 'Regionais Estaduais',
-  },
-  {
-    name: 'REG_MUN',
-    description: 'Regionais Municipais',
-  },
+  { name: AreaEnum.ALU, description: 'Alunos' },
+  { name: AreaEnum.ANO_LET, description: 'Ano Letivo' },
+  { name: AreaEnum.AVA_ON, description: 'Avaliação Online' },
+  { name: AreaEnum.AVA, description: 'Avaliações' },
+  { name: AreaEnum.DESC, description: 'Descritores' },
+  { name: AreaEnum.DISC, description: 'Disciplinas' },
+  { name: AreaEnum.EDI, description: 'Edições' },
+  { name: AreaEnum.EDI_MUN, description: 'Edições Municipais' },
+  { name: AreaEnum.ENT_ALU, description: 'Enturmar Alunos' },
+  { name: AreaEnum.ENTU, description: 'Enturmação' },
+  { name: AreaEnum.ESC, description: 'Escolas' },
+  { name: AreaEnum.EVO_LEI, description: 'Evolução de Leitura' },
+  { name: AreaEnum.EXP_DAD, description: 'Exportar Microdados' },
+  { name: AreaEnum.HIST_DES, description: 'Histórico de Desempenho' },
+  { name: AreaEnum.HOME, description: 'Home' },
+  { name: AreaEnum.IMP_EXP, description: 'Importar/Exportar Dados' },
+  { name: AreaEnum.INF, description: 'Infrequência' },
+  { name: AreaEnum.JOR_PED, description: 'Jornadas Pedagógicas' },
+  { name: AreaEnum.LAN_RES, description: 'Lançar Resultados' },
+  { name: AreaEnum.LANC, description: 'Lançamentos' },
+  { name: AreaEnum.LIN_EVO, description: 'Linha Evolutiva' },
+  { name: AreaEnum.LOG_SIS, description: 'Logs do Sistema' },
+  { name: AreaEnum.LST_RES, description: 'Lista de Resultados' },
+  { name: AreaEnum.MAT_REF, description: 'Matriz de Referência' },
+  { name: AreaEnum.MCO, description: 'Minha Conta' },
+  { name: AreaEnum.MEN, description: 'Mensagens' },
+  { name: AreaEnum.MEN_TUT, description: 'Mensagens para Tutores' },
+  { name: AreaEnum.MUN, description: 'Municípios' },
+  { name: AreaEnum.NIV_DES, description: 'Nível de Desempenho' },
+  { name: AreaEnum.PER_ACES, description: 'Perfis de Acesso' },
+  { name: AreaEnum.PRO, description: 'Professores' },
+  { name: AreaEnum.REG_EST, description: 'Regionais Estaduais' },
+  { name: AreaEnum.REG_MUN, description: 'Regionais Municipais' },
+  { name: AreaEnum.REG_UNI, description: 'Regional Única' },
+  { name: AreaEnum.REL, description: 'Relatórios' },
+  { name: AreaEnum.REL_COR, description: 'Relatório de Cor e Raça' },
+  { name: AreaEnum.REL_EXT, description: 'Relatórios Externos' },
+  { name: AreaEnum.REL_IFR, description: 'Infrequência' },
+  { name: AreaEnum.REL_NAL, description: 'Relatório de Não Avaliados' },
+  { name: AreaEnum.SER, description: 'Séries' },
+  { name: AreaEnum.SIN_TEST, description: 'Relatório Sintético de Testes' },
+  { name: AreaEnum.SINT_GER, description: 'Síntese Geral' },
+  { name: AreaEnum.TES, description: 'Testes' },
+  { name: AreaEnum.TRF_ALU, description: 'Transferir Alunos' },
+  { name: AreaEnum.TUR, description: 'Turmas' },
+  { name: AreaEnum.USU, description: 'Usuários' },
+  { name: AreaEnum.AI_ASSIST, description: 'Assistente de IA' },
+  { name: AreaEnum.OPR_LOTE, description: 'Operações em Lote' },
 ]

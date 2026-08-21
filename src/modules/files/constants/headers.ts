@@ -38,4 +38,5 @@ export const headersStudents = [
   'ALU_NUMERO',
   'ALU_COMPLEMENTO',
   'ALU_BAIRRO',
+  'ALU_MATRICULA_MUNICIPAL',
 ]

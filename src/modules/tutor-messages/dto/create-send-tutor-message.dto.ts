@@ -8,4 +8,6 @@ export class CreateSendTutorMessageDto {
   forWpp: boolean
 
   forEmail: boolean
+
+  forInApp: boolean
 }

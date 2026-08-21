@@ -22,11 +22,15 @@ import { User } from 'src/modules/user/model/entities/user.entity'
 import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard'
 import { ImportResultStudentsDto } from '../model/dto/import-result-students.dto'
 import { FileService } from '../service/file.service'
+import { StudentImportService } from '../service/student-import.service'
 
 @Controller('files')
 @ApiTags('Arquivo de Template')
 export class FileController {
-  constructor(private fileService: FileService) {}
+  constructor(
+    private fileService: FileService,
+    private studentImportService: StudentImportService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -65,7 +69,7 @@ export class FileController {
     @CurrentUser() user: User,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    this.fileService.newImportStudents(file, user)
+    this.studentImportService.newImportStudents(file, user)
   }
 
   @UseGuards(JwtAuthGuard)

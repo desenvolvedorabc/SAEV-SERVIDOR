@@ -95,6 +95,7 @@ export class UserService {
         'Users.USU_ID',
         'Users.USU_NOME',
         'Users.USU_EMAIL',
+        'Users.USU_ATIVO',
         'USU_MUN.MUN_ID',
         'USU_MUN.MUN_NOME',
         'USU_ESC.ESC_ID',

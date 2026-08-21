@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { InjectConnection, InjectRepository } from '@nestjs/typeorm'
 import { subHours } from 'date-fns'
 import { PaginationParams } from 'src/helpers/params'
@@ -13,6 +17,7 @@ import { Connection, MoreThanOrEqual, Repository } from 'typeorm'
 import { Assessment } from '../assessment/model/entities/assessment.entity'
 import { Job } from '../jobs/job.entity'
 import { Test } from '../test/model/entities/test.entity'
+import { EXPORT_ERROR_MESSAGES } from './constants/export-messages'
 import { CreateMicrodatumDto } from './dto/create-microdatum.dto'
 import { ExportEvaluationTemplate } from './dto/export-evaluation-template.dto'
 import {
@@ -29,12 +34,11 @@ import {
   mapperFormatStudents,
 } from './mappers'
 import { MicrodataRepository } from './repositories/microdata.repository'
-import { endCsvStream, initialCsvStream } from './utils/csv-stream'
-import {
-  addCsvToArchive,
-  finalizeCsvArchive,
-  initialCsvArchive,
-} from './utils/mult-csv-stream'
+import { buildExtractionMetadata } from './utils/build-extraction-metadata'
+import { initialCsvStream } from './utils/csv-stream'
+import { addDictionaryToArchive } from './utils/dictionary-stream'
+import { addMetadataToArchive } from './utils/metadata-stream'
+import { addCsvToArchive, initialCsvArchive } from './utils/mult-csv-stream'
 
 @Injectable()
 export class MicrodataService {
@@ -174,7 +178,20 @@ export class MicrodataService {
         mapperEvaluationTemplate(item, students, typeSchool, csvStream)
       }
 
-      endCsvStream(csvStream, archive)
+      csvStream.end()
+      await this.appendExtractionMetadata({
+        archive,
+        type: TypeMicrodata.TEMPLATE_AVALIACAO,
+        user,
+        stateId,
+        countyId,
+        typeSchool,
+        year: null,
+        edition: dto.assessmentId,
+        exportFormat: null,
+      })
+      addDictionaryToArchive(archive, TypeMicrodata.TEMPLATE_AVALIACAO)
+      archive.finalize()
 
       await this.saveDataAndSendEmail({
         user,
@@ -191,7 +208,9 @@ export class MicrodataService {
   async exportEvaluationData(dto: PaginationMicroDataDto, user: User) {
     const jobPending = await this.verifyExistJobPending()
 
-    if (jobPending) return
+    if (jobPending) {
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.JOB_PENDING)
+    }
 
     const findMicrodata = await this.verifyExistMicrodata(
       dto,
@@ -199,9 +218,16 @@ export class MicrodataService {
     )
 
     if (findMicrodata) {
-      return
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.RECENT_EXPORT)
     }
 
+    this.processEvaluationDataExport(dto, user)
+  }
+
+  private async processEvaluationDataExport(
+    dto: PaginationMicroDataDto,
+    user: User,
+  ) {
     const { county, exportFormat, typeSchool, stateId } = dto
 
     const sinal = exportFormatSinal[exportFormat]
@@ -245,7 +271,20 @@ export class MicrodataService {
         }
       }
 
-      finalizeCsvArchive(streams, archive)
+      Object.values(streams).forEach((s) => s.end())
+      await this.appendExtractionMetadata({
+        archive,
+        type: TypeMicrodata.AVALIACAO,
+        user,
+        stateId,
+        countyId: county,
+        typeSchool,
+        year: dto.year,
+        edition: dto.edition,
+        exportFormat,
+      })
+      addDictionaryToArchive(archive, TypeMicrodata.AVALIACAO)
+      archive.finalize()
 
       assessment = null
 
@@ -268,9 +307,16 @@ export class MicrodataService {
     )
 
     if (findMicrodata) {
-      return
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.RECENT_EXPORT)
     }
 
+    this.processInfrequencyDataExport(dto, user)
+  }
+
+  private async processInfrequencyDataExport(
+    dto: PaginationMicroDataDto,
+    user: User,
+  ) {
     const { county, exportFormat, typeSchool, stateId } = dto
 
     const sinal = exportFormatSinal[exportFormat]
@@ -295,7 +341,20 @@ export class MicrodataService {
 
       mapperFormatInfrequency(infrequency, csvStream)
 
-      endCsvStream(csvStream, archive)
+      csvStream.end()
+      await this.appendExtractionMetadata({
+        archive,
+        type: TypeMicrodata.INFREQUENCIA,
+        user,
+        stateId,
+        countyId: county,
+        typeSchool,
+        year: dto.year,
+        edition: dto.edition,
+        exportFormat,
+      })
+      addDictionaryToArchive(archive, TypeMicrodata.INFREQUENCIA)
+      archive.finalize()
 
       await this.saveDataAndSendEmail({
         user,
@@ -329,7 +388,7 @@ export class MicrodataService {
     { county: countyId, typeSchool, stateId }: PaginationMicroDataDto,
     type: TypeMicrodata,
   ) {
-    const hoursAgo = subHours(new Date(), 2)
+    const hoursAgo = subHours(new Date(), 1)
 
     const county = countyId ? { MUN_ID: countyId } : null
 
@@ -356,9 +415,16 @@ export class MicrodataService {
     )
 
     if (findMicrodata) {
-      return
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.RECENT_EXPORT)
     }
 
+    this.processStudentsDataExport(dto, user)
+  }
+
+  private async processStudentsDataExport(
+    dto: PaginationMicroDataDto,
+    user: User,
+  ) {
     const { county, exportFormat, typeSchool, stateId } = dto
 
     const sinal = exportFormatSinal[exportFormat]
@@ -380,7 +446,19 @@ export class MicrodataService {
 
       await this.getStudentsAndAddStream(dto, csvStream)
 
-      endCsvStream(csvStream, archive)
+      await this.appendExtractionMetadata({
+        archive,
+        type: TypeMicrodata.ALUNOS,
+        user,
+        stateId,
+        countyId: county,
+        typeSchool,
+        year: dto.year,
+        edition: dto.edition,
+        exportFormat,
+      })
+      addDictionaryToArchive(archive, TypeMicrodata.ALUNOS)
+      archive.finalize()
 
       await this.saveDataAndSendEmail({
         user,
@@ -462,6 +540,52 @@ export class MicrodataService {
     }
 
     stream.end()
+  }
+
+  async appendExtractionMetadata({
+    archive,
+    type,
+    user,
+    stateId,
+    countyId,
+    typeSchool,
+    year,
+    edition,
+    exportFormat,
+  }: {
+    archive: any
+    type: TypeMicrodata
+    user: User
+    stateId?: number | null
+    countyId?: number | null
+    typeSchool?: any
+    year?: string | number | null
+    edition?: string | number | null
+    exportFormat?: string | null
+  }) {
+    try {
+      const { stateName, countyName, assessmentName } =
+        await this.microdataRepository2.getStateAndCountyNames(
+          stateId,
+          countyId,
+          edition,
+        )
+
+      const metadata = buildExtractionMetadata({
+        type,
+        user,
+        stateName,
+        countyName,
+        typeSchool,
+        year,
+        edition: assessmentName ?? edition,
+        exportFormat,
+      })
+
+      addMetadataToArchive(archive, metadata)
+    } catch (err) {
+      console.error('Falha ao anexar metadados da extração ao arquivo:', err)
+    }
   }
 
   async saveDataAndSendEmail({

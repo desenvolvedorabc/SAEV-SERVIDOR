@@ -8,6 +8,7 @@ import { StudentTest } from 'src/modules/release-results/model/entities/student-
 import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { SchoolAbsence } from 'src/modules/school-absences/model/entities/school-absences.entity'
+import { State } from 'src/modules/states/model/entities/state.entity'
 import { Student } from 'src/modules/student/model/entities/student.entity'
 import { Test } from 'src/modules/test/model/entities/test.entity'
 import { Connection } from 'typeorm'
@@ -81,6 +82,9 @@ export class MicrodataRepository {
         'TES_DIS.DIS_ID',
         'TES_DIS.DIS_NOME',
         'TEMPLATE_TEST.TEG_ID',
+        'TEMPLATE_TEST.TEG_RESPOSTA_CORRETA',
+        'TEMPLATE_TEST.TEG_ANULADA',
+        'TEMPLATE_TEST.TEG_NIVEL',
         'TEG_MTI.MTI_CODIGO',
         'MTI_MTO.MTO_ID',
       ])
@@ -138,6 +142,9 @@ export class MicrodataRepository {
         'TES_DIS.DIS_NOME',
         'TEMPLATE_TEST.TEG_ID',
         'TEMPLATE_TEST.TEG_ORDEM',
+        'TEMPLATE_TEST.TEG_RESPOSTA_CORRETA',
+        'TEMPLATE_TEST.TEG_ANULADA',
+        'TEMPLATE_TEST.TEG_NIVEL',
         'TEG_MTI.MTI_CODIGO',
       ])
       .innerJoin('Assessment.AVA_AVM', 'AVA_AVM')
@@ -182,6 +189,7 @@ export class MicrodataRepository {
         'StudentTest.ALT_JUSTIFICATIVA as ALT_JUSTIFICATIVA',
         'ALT_ALU.ALU_ID as ALU_ID',
         'ALT_ALU.ALU_NOME as ALU_NOME',
+        'ALT_ALU.ALU_MATRICULA_MUNICIPAL as ALU_MATRICULA_MUNICIPAL',
         'ALU_PEL.PEL_NOME as PEL_NOME',
         'ALU_GEN.GEN_NOME as GEN_NOME',
         'TUR_ESC.ESC_ID as ESC_ID',
@@ -307,9 +315,10 @@ export class MicrodataRepository {
         'ANSWERS_TEST.ATR_ID as ATR_ID',
         'ANSWERS_TEST.ATR_ALT_ID as ATR_ALT',
         'ANSWERS_TEST.ATR_RESPOSTA as ATR_RESPOSTA',
-        'ANSWERS_TEST.ATR_CERTO as ATR_CERTO',
         'ANSWERS_TEST.questionTemplateTEGID as TEG_ID',
+        'teg.TEG_RESPOSTA_CORRETA as TEG_RESPOSTA_CORRETA',
       ])
+      .leftJoin('ANSWERS_TEST.questionTemplate', 'teg')
       .where('ANSWERS_TEST.ATR_ALT_ID IN (:...altIds)', { altIds })
       .getRawMany()
 
@@ -552,6 +561,76 @@ export class MicrodataRepository {
     return {
       students,
     }
+  }
+
+  async getStateAndCountyNames(
+    stateId?: number | null,
+    countyId?: number | null,
+    assessmentId?: number | string | null,
+  ): Promise<{
+    stateName?: string
+    countyName?: string
+    assessmentName?: string
+  }> {
+    const result: {
+      stateName?: string
+      countyName?: string
+      assessmentName?: string
+    } = {}
+
+    try {
+      if (stateId) {
+        const state = await this.connection
+          .getRepository(State)
+          .createQueryBuilder('State')
+          .select(['State.name as name'])
+          .where('State.id = :stateId', { stateId })
+          .getRawOne<{ name: string }>()
+
+        if (state?.name) result.stateName = state.name
+      }
+    } catch (err) {
+      console.error('Falha ao buscar nome do estado para metadados:', err)
+    }
+
+    try {
+      if (countyId) {
+        const county = await this.connection
+          .getRepository(County)
+          .createQueryBuilder('County')
+          .select(['County.MUN_NOME as name'])
+          .where('County.MUN_ID = :countyId', { countyId })
+          .getRawOne<{ name: string }>()
+
+        if (county?.name) result.countyName = county.name
+      }
+    } catch (err) {
+      console.error('Falha ao buscar nome do município para metadados:', err)
+    }
+
+    try {
+      const parsedAssessmentId =
+        typeof assessmentId === 'string'
+          ? parseInt(assessmentId, 10)
+          : assessmentId
+
+      if (parsedAssessmentId && !Number.isNaN(parsedAssessmentId)) {
+        const assessment = await this.connection
+          .getRepository(Assessment)
+          .createQueryBuilder('Assessment')
+          .select(['Assessment.AVA_NOME as name'])
+          .where('Assessment.AVA_ID = :assessmentId', {
+            assessmentId: parsedAssessmentId,
+          })
+          .getRawOne<{ name: string }>()
+
+        if (assessment?.name) result.assessmentName = assessment.name
+      }
+    } catch (err) {
+      console.error('Falha ao buscar nome da avaliação para metadados:', err)
+    }
+
+    return result
   }
 
   async getAssessmentsForTemplate({

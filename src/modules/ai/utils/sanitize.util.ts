@@ -1,4 +1,18 @@
-import { ReportContext } from '../model/interface/report-context.interface'
+import {
+  DescriptorsReportContext,
+  EvolutionaryLineReadingReportContext,
+  EvolutionaryLineReportContext,
+  EvolutionaryLineStudentReportContext,
+  GroupingReportContext,
+  NotEvaluatedReportContext,
+  PerformanceHistoryReportContext,
+  PerformanceLevelReportContext,
+  RaceReportContext,
+  ReleasesReportContext,
+  ReportContext,
+  SchoolAbsencesReportContext,
+  SyntheticTestReportContext,
+} from '../model/interface/report-context.interface'
 
 const FORBIDDEN_PATTERNS = [
   /ignore\s+(previous|all|above|prior)\s+(instructions?|prompts?)/gi,
@@ -16,6 +30,15 @@ const FORBIDDEN_PATTERNS = [
   /data\s*:\s*text\/html/gi,
   /eval\s*\(/gi,
   /function\s*\(/gi,
+  // Portuguese semantic bypass patterns
+  /\bfinja\s+(que|ser)\b/gi,
+  /\bsimule\s+que\b/gi,
+  /\bfaça\s+de\s+conta\b/gi,
+  /\bcomporte[-\s]se\s+como\b/gi,
+  /\besqueça\s+(as\s+)?(instruções|regras|diretrizes)/gi,
+  /\bignore\s+(as\s+)?(instruções|regras|diretrizes)/gi,
+  /\bvocê\s+(agora\s+)?é\s+(um|uma)\b/gi,
+  /\bnovas?\s+instruções?:/gi,
 ]
 
 const MAX_STRING_LENGTH = 1000
@@ -93,6 +116,126 @@ export function sanitizeReportContext(context: ReportContext): ReportContext {
   }
 
   return sanitizeObject(context) as ReportContext
+}
+
+export function sanitizeDescriptorsReportContext(
+  context: DescriptorsReportContext,
+): DescriptorsReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as DescriptorsReportContext
+}
+
+export function sanitizeSyntheticTestReportContext(
+  context: SyntheticTestReportContext,
+): SyntheticTestReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as SyntheticTestReportContext
+}
+
+export function sanitizeRaceReportContext(
+  context: RaceReportContext,
+): RaceReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as RaceReportContext
+}
+
+export function sanitizePerformanceLevelReportContext(
+  context: PerformanceLevelReportContext,
+): PerformanceLevelReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as PerformanceLevelReportContext
+}
+
+export function sanitizePerformanceHistoryReportContext(
+  context: PerformanceHistoryReportContext,
+): PerformanceHistoryReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as PerformanceHistoryReportContext
+}
+
+export function sanitizeNotEvaluatedReportContext(
+  context: NotEvaluatedReportContext,
+): NotEvaluatedReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as NotEvaluatedReportContext
+}
+
+export function sanitizeEvolutionaryLineReadingReportContext(
+  context: EvolutionaryLineReadingReportContext,
+): EvolutionaryLineReadingReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as EvolutionaryLineReadingReportContext
+}
+
+export function sanitizeEvolutionaryLineStudentReportContext(
+  context: EvolutionaryLineStudentReportContext,
+): EvolutionaryLineStudentReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as EvolutionaryLineStudentReportContext
+}
+
+export function sanitizeSchoolAbsencesReportContext(
+  context: SchoolAbsencesReportContext,
+): SchoolAbsencesReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as SchoolAbsencesReportContext
+}
+
+export function sanitizeEvolutionaryLineReportContext(
+  context: EvolutionaryLineReportContext,
+): EvolutionaryLineReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as EvolutionaryLineReportContext
+}
+
+export function sanitizeReleasesReportContext(
+  context: ReleasesReportContext,
+): ReleasesReportContext {
+  if (!context || typeof context !== 'object') {
+    return { series: { type: 'bar', level: 'serie', items: [] }, items: [] }
+  }
+
+  return sanitizeObject(context) as ReleasesReportContext
+}
+
+export function sanitizeGroupingReportContext(
+  context: GroupingReportContext,
+): GroupingReportContext {
+  if (!context || typeof context !== 'object') {
+    return { items: [] }
+  }
+
+  return sanitizeObject(context) as GroupingReportContext
 }
 
 export function sanitizeUserMessage(message: string): string {

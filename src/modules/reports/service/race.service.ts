@@ -39,7 +39,7 @@ export class ReportRaceService {
 
     const { reports: data } = await this.raceRepository.getDataReports(params)
 
-    const reports = data.sort((a, b) => b?.edition?.AVA_ID - a?.edition?.AVA_ID)
+    const reports = data.sort((a, b) => a?.edition?.AVA_ID - b?.edition?.AVA_ID)
     let items = []
 
     if (reports?.length) {

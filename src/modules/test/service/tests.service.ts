@@ -3,7 +3,9 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -15,6 +17,12 @@ import { PaginationParams } from 'src/helpers/params'
 import { editFileName } from 'src/helpers/utils'
 import { AssessmentOnline } from 'src/modules/assessment-online/entities/assessment-online.entity'
 import { County } from 'src/modules/counties/model/entities/county.entity'
+import {
+  REPROCESS_DISPATCHER,
+  ReprocessDispatcher,
+} from 'src/modules/jobs/dispatcher/reprocess-dispatcher.interface'
+import { AnswerKeyChangeLog } from 'src/modules/jobs/model/entities/answer-key-change-log.entity'
+import { AnswerKeyChangeField } from 'src/modules/jobs/model/enums/answer-key-change-field.enum'
 import { StudentTest } from 'src/modules/release-results/model/entities/student-test.entity'
 import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
@@ -36,6 +44,9 @@ import { UpdateTestDto } from '../model/dto/update-tests.dto'
 import { Test } from '../model/entities/test.entity'
 import { TestTemplate } from '../model/entities/test-template.entity'
 
+const STRUCTURAL_LOCK_MESSAGE =
+  'Não é possível alterar a estrutura do teste pois já existem lançamentos.'
+
 @Injectable()
 export class TestsService {
   constructor(
@@ -47,11 +58,15 @@ export class TestsService {
     private studentRepository: Repository<Student>,
     @InjectRepository(StudentTestAnswer)
     private studentTestAnswerRepository: Repository<StudentTestAnswer>,
+    @InjectRepository(AnswerKeyChangeLog)
+    private answerKeyChangeLogRepository: Repository<AnswerKeyChangeLog>,
 
     @InjectConnection()
     private readonly connection: Connection,
 
     private configService: ConfigService,
+    @Inject(REPROCESS_DISPATCHER)
+    private reprocessDispatcher: ReprocessDispatcher,
   ) {}
 
   async paginate({
@@ -110,20 +125,25 @@ export class TestsService {
     updateTestDto: UpdateTestDto,
     user: User,
   ): Promise<Test> {
+    await this.verifyStructuralLock(TES_ID, updateTestDto)
     const items = updateTestDto.TES_TEG
     delete updateTestDto.TES_TEG
     const test = await this.findOne(TES_ID)
-    return this.testRepository
-      .save({ ...updateTestDto, TES_ID }, { data: user })
-      .then((updateTest: Test) => {
-        updateTest = {
-          ...updateTest,
-          TES_TEG: test?.TES_TEG,
-        }
-        if (Array.isArray(items) && this.saveTemplates(updateTest, items)) {
-          return updateTest
-        }
-      })
+
+    let updateTest = await this.testRepository.save(
+      { ...updateTestDto, TES_ID },
+      { data: user },
+    )
+    updateTest = {
+      ...updateTest,
+      TES_TEG: test?.TES_TEG,
+    }
+
+    if (Array.isArray(items)) {
+      await this.saveTemplates(updateTest, items, user)
+    }
+
+    return updateTest
   }
 
   async toggleActive(id: number): Promise<{
@@ -175,8 +195,75 @@ export class TestsService {
     }
   }
 
-  async saveTemplates(updateTest: Test, items: TestTemplate[]) {
-    for await (const oldTemplate of updateTest?.TES_TEG) {
+  private async verifyStructuralLock(
+    testId: number,
+    dto: UpdateTestDto,
+  ): Promise<void> {
+    const hasLaunch = await this.connection
+      .getRepository(StudentTest)
+      .findOne({ where: { ALT_TES: { TES_ID: testId } } })
+
+    if (!hasLaunch) return
+
+    const current = await this.findOne(testId)
+    const savedTemplates = await this.findTemplates(testId)
+
+    if (dto.TES_ANO !== undefined && dto.TES_ANO !== current.TES_ANO) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
+
+    const currentDisId =
+      (current.TES_DIS as any)?.DIS_ID ?? current.TES_DIS ?? null
+    const dtoDisId = (dto.TES_DIS as any)?.DIS_ID ?? dto.TES_DIS ?? null
+
+    if (dto.TES_DIS !== undefined && dtoDisId !== currentDisId) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
+
+    const currentSerId =
+      (current.TES_SER as any)?.SER_ID ?? current.TES_SER ?? null
+    const dtoSerId = (dto.TES_SER as any)?.SER_ID ?? dto.TES_SER ?? null
+
+    if (dto.TES_SER !== undefined && dtoSerId !== currentSerId) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
+
+    const currentMarId =
+      (current.TES_MAR as any)?.MAR_ID ?? current.TES_MAR ?? null
+    const dtoMarId = (dto.TES_MAR as any)?.MAR_ID ?? dto.TES_MAR ?? null
+
+    if (dto.TES_MAR !== undefined && dtoMarId !== currentMarId) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
+
+    if (!Array.isArray(dto.TES_TEG)) return
+
+    const savedIds = new Set(savedTemplates.map((t) => t.TEG_ID))
+    const dtoIds = new Set(
+      dto.TES_TEG.filter((t: TestTemplate) => t.TEG_ID != null).map(
+        (t: TestTemplate) => t.TEG_ID,
+      ),
+    )
+
+    const hasAddition = dto.TES_TEG.some((t: TestTemplate) => t.TEG_ID == null)
+    const hasRemoval = [...savedIds].some((id) => !dtoIds.has(id as number))
+
+    if (hasAddition || hasRemoval) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
+  }
+
+  async saveTemplates(
+    updateTest: Test,
+    items: TestTemplate[],
+    user?: User,
+  ): Promise<TestTemplate[]> {
+    const oldByid = new Map<number, TestTemplate>()
+    for (const oldTemplate of updateTest?.TES_TEG ?? []) {
+      if (oldTemplate?.TEG_ID) oldByid.set(oldTemplate.TEG_ID, oldTemplate)
+    }
+
+    for (const oldTemplate of updateTest?.TES_TEG ?? []) {
       const existsTemplate = items.find(
         (template) => template?.TEG_ID === oldTemplate.TEG_ID,
       )
@@ -186,30 +273,96 @@ export class TestsService {
       }
     }
 
-    return items?.map((template: TestTemplate) => {
-      if (!template?.TEG_TES) {
-        template = {
-          ...template,
-          TEG_TES: updateTest,
+    return Promise.all(
+      (items ?? []).map(async (template: TestTemplate) => {
+        const withParent = template?.TEG_TES
+          ? template
+          : { ...template, TEG_TES: updateTest }
+        const previous = withParent?.TEG_ID
+          ? oldByid.get(withParent.TEG_ID)
+          : null
+
+        const saved = await this.testTemplatesRepository.save(withParent)
+        if (previous) {
+          await this.logAndEmitAnswerKeyChanges(previous, withParent, user)
         }
-      }
-      this.testTemplatesRepository.save(template).then(() => {
-        return template
+        return saved
+      }),
+    )
+  }
+
+  private async logAndEmitAnswerKeyChanges(
+    previous: TestTemplate,
+    current: TestTemplate,
+    user?: User,
+  ): Promise<void> {
+    const changes: Array<{
+      field: AnswerKeyChangeField
+      previousValue: string | null
+      newValue: string
+    }> = []
+
+    if (
+      (previous.TEG_RESPOSTA_CORRETA ?? null) !==
+      (current.TEG_RESPOSTA_CORRETA ?? null)
+    ) {
+      changes.push({
+        field: AnswerKeyChangeField.RESPOSTA_CORRETA,
+        previousValue: previous.TEG_RESPOSTA_CORRETA ?? null,
+        newValue: current.TEG_RESPOSTA_CORRETA ?? '',
       })
-    })
+    }
+
+    const prevAnulada = !!previous.TEG_ANULADA
+    const newAnulada = !!current.TEG_ANULADA
+    if (prevAnulada !== newAnulada) {
+      changes.push({
+        field: AnswerKeyChangeField.ANULADA,
+        previousValue: String(prevAnulada),
+        newValue: String(newAnulada),
+      })
+    }
+
+    const prevMtiId = previous.TEG_MTI?.MTI_ID ?? null
+    const rawNewMti = (current as any).TEG_MTI
+    const newMtiId =
+      (typeof rawNewMti === 'object' && rawNewMti !== null
+        ? rawNewMti.MTI_ID
+        : typeof rawNewMti === 'number'
+          ? rawNewMti
+          : undefined) ??
+      (current as any).TEG_MTI_ID ??
+      null
+    if (prevMtiId !== newMtiId) {
+      changes.push({
+        field: AnswerKeyChangeField.DESCRITOR,
+        previousValue: prevMtiId !== null ? String(prevMtiId) : null,
+        newValue: newMtiId !== null ? String(newMtiId) : '',
+      })
+    }
+
+    for (const change of changes) {
+      const log = this.answerKeyChangeLogRepository.create({
+        testTemplateId: current.TEG_ID,
+        field: change.field,
+        previousValue: change.previousValue,
+        newValue: change.newValue,
+        changedByUserId: user?.USU_ID ?? null,
+      })
+      const saved = await this.answerKeyChangeLogRepository.save(log)
+      await this.reprocessDispatcher.scheduleDebounce(current.TEG_ID, saved.id)
+    }
   }
 
   async add(createTestDto: CreateTestDto, user: User) {
     await this.verifyTestExists(createTestDto)
 
     try {
-      return this.testRepository
-        .save(createTestDto, { data: user })
-        .then((createTest: Test) => {
-          if (this.saveTemplates(createTest, createTest.TES_TEG)) {
-            return createTest
-          }
-        })
+      const createTest = await this.testRepository.save(createTestDto, {
+        data: user,
+      })
+      await this.saveTemplates(createTest, createTest.TES_TEG)
+      return createTest
     } catch (e) {
       throw new InternalServerError()
     }
@@ -241,6 +394,12 @@ export class TestsService {
     )
 
     test.TES_TEG = templates
+
+    const launch = await this.connection
+      .getRepository(StudentTest)
+      .findOne({ where: { ALT_TES: { TES_ID: id } } })
+    test.hasLaunches = !!launch
+
     return test
   }
 
@@ -522,6 +681,23 @@ export class TestsService {
 
   async deleteQuestion(questionId: number) {
     const { question } = await this.findOneQuestion(questionId)
+
+    const questionWithParent = await this.testTemplatesRepository.findOne({
+      where: { TEG_ID: questionId },
+      relations: ['TEG_TES'],
+    })
+
+    if (!questionWithParent?.TEG_TES?.TES_ID) {
+      throw new InternalServerErrorException('Question has no parent test.')
+    }
+
+    const hasLaunch = await this.connection.getRepository(StudentTest).findOne({
+      where: { ALT_TES: { TES_ID: questionWithParent.TEG_TES.TES_ID } },
+    })
+
+    if (hasLaunch) {
+      throw new ForbiddenException(STRUCTURAL_LOCK_MESSAGE)
+    }
 
     const studentTestAnswer = await this.studentTestAnswerRepository.findOne({
       where: {

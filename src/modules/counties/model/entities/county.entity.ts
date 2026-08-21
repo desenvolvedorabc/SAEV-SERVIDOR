@@ -126,6 +126,12 @@ export class County {
     type: 'boolean',
     default: false,
   })
+  MUN_MENSAGEM_IN_APP_ATIVO: boolean
+
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
   MUN_LEITURA_HERBY_ATIVO: boolean
 
   @Column()

@@ -48,7 +48,7 @@ export class EvolutionaryLineRepository {
       throw new BadRequestException('Parameter serie is invalid')
     }
 
-    if (!municipalityOrUniqueRegionalId) {
+    if (!municipalityOrUniqueRegionalId && !school && !schoolClass) {
       const { items } = await this.getReportEditionGroupedByCounty(
         params,
         user,
@@ -174,7 +174,9 @@ export class EvolutionaryLineRepository {
       .innerJoin('ReportEdition.county', 'county')
       .andWhere('edition.AVA_ANO = :year', { year })
       .andWhere('REPORT_SUBJECT.countTotalStudents > 0')
-      .groupBy('REPORT_SUBJECT.testTESID, ReportEdition.editionAVAID')
+      .groupBy(
+        'REPORT_SUBJECT.testTESID, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name',
+      )
 
     if (!edition) {
       if (isReading) {

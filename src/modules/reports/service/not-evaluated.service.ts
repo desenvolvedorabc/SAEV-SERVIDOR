@@ -195,6 +195,7 @@ export class NotEvaluatedService {
       stateId,
       stateRegionalId,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
     } = params
 
     if (schoolClass) {
@@ -224,7 +225,7 @@ export class NotEvaluatedService {
               id = report.schoolClass?.TUR_ID
               name = report.schoolClass?.TUR_NOME
               level = 'schoolClass'
-            } else if (municipalityOrUniqueRegionalId) {
+            } else if (municipalityOrUniqueRegionalId || allCountyRegionals) {
               id = report.school?.ESC_ID
               name = report.school?.ESC_NOME
               type = report.school?.ESC_TIPO

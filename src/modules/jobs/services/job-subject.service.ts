@@ -30,12 +30,14 @@ export class JobSubjectService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobSubjectRepository.getMunicipalityRegionalReportEditions(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedByCounty = _.groupBy(
@@ -53,6 +55,7 @@ export class JobSubjectService {
             reportEdition.assessmentId,
             { county: { MUN_ID: reportEdition.MUN_ID }, type },
             ['reportsSubjects'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -103,12 +106,14 @@ export class JobSubjectService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobSubjectRepository.getReportEditionGroupedByTestAndSchoolClass(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedBySchool = _.groupBy(
@@ -125,6 +130,7 @@ export class JobSubjectService {
             reportEdition.assessmentId,
             { school: { ESC_ID: reportEdition.ESC_ID }, type },
             ['reportsSubjects'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -224,12 +230,14 @@ export class JobSubjectService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobSubjectRepository.getReportEditionGroupedByMunicipalityRegional(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedByRegional = _.groupBy(
@@ -246,6 +254,7 @@ export class JobSubjectService {
             reportEdition.assessmentId,
             { regionalId: reportEdition.regionalId, type },
             ['reportsSubjects'],
+            affectedTestIds,
           )
 
         await Promise.all(

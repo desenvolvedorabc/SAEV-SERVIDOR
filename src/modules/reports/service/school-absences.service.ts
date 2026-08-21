@@ -54,35 +54,39 @@ export class ReportSchoolAbsencesService {
   ) {}
 
   async handle(dto: PaginationParams, user: User) {
-    const params = formatParamsByProfile(dto, user)
+    try {
+      const params = formatParamsByProfile(dto, user)
 
-    const { data, level } = await this.getData(params, user)
+      const { data, level } = await this.getData(params, user)
 
-    const { graph } = await this.getGraphAndTotalInfrequencyForMonths(params)
+      const { graph } = await this.getGraphAndTotalInfrequencyForMonths(params)
 
-    const formattedData = await Promise.all(
-      data.items.map(async (item) => {
+      const formattedData = []
+      for (const item of data.items) {
         const { graph: graphAndTotal } =
           await this.getGraphAndTotalInfrequencyForMonths({
             ...params,
             [level]: item[optionsFilter[level][0]],
           })
 
-        return {
+        formattedData.push({
           id: item[optionsFilter[level][0]],
           name: item[optionsFilter[level][1]],
           type: item[optionsFilter[level][2]],
           graph: graphAndTotal,
-        }
-      }),
-    )
+        })
+      }
 
-    return {
-      graph,
-      data: {
-        ...data,
-        items: formattedData,
-      },
+      return {
+        graph,
+        data: {
+          ...data,
+          items: formattedData,
+        },
+      }
+    } catch (error) {
+      console.error('school-absences handle error:', error)
+      throw error
     }
   }
 
@@ -91,31 +95,30 @@ export class ReportSchoolAbsencesService {
 
     const { data, level } = await this.getData(params, user, true)
 
-    const formattedData = await Promise.all(
-      data.items.map(async (item) => {
-        const { graph } = await this.getGraphAndTotalInfrequencyForMonths({
-          ...params,
-          [level]: item[optionsFilter[level][0]],
-        })
+    const formattedData = []
+    for (const item of data.items) {
+      const { graph } = await this.getGraphAndTotalInfrequencyForMonths({
+        ...params,
+        [level]: item[optionsFilter[level][0]],
+      })
 
-        const formattedMonths = graph.months.reduce((acc, item) => {
-          acc[namesForMonths[item.month]] = item.total
+      const formattedMonths = graph.months.reduce((acc, monthItem) => {
+        acc[namesForMonths[monthItem.month]] = monthItem.total
 
-          return acc
-        }, {})
+        return acc
+      }, {})
 
-        return {
-          nivel: namesInBROfTheLevel[level],
-          ano: params.year,
-          id: item[optionsFilter[level][0]],
-          nome: item[optionsFilter[level][1]],
-          total_faltas: graph.total_infrequency,
-          total_enturmados: level === 'student' ? 'N/A' : graph.total_grouped,
+      formattedData.push({
+        nivel: namesInBROfTheLevel[level],
+        ano: params.year,
+        id: item[optionsFilter[level][0]],
+        nome: item[optionsFilter[level][1]],
+        total_faltas: graph.total_infrequency,
+        total_enturmados: level === 'student' ? 'N/A' : graph.total_grouped,
 
-          ...formattedMonths,
-        }
-      }),
-    )
+        ...formattedMonths,
+      })
+    }
 
     const parser = new Parser({
       quote: ' ',
@@ -180,6 +183,7 @@ export class ReportSchoolAbsencesService {
     student,
     verifyProfileForState,
     municipalityOrUniqueRegionalId,
+    allCountyRegionals,
     stateId,
     stateRegionalId,
     typeSchool,
@@ -231,6 +235,8 @@ export class ReportSchoolAbsencesService {
           municipalityOrUniqueRegionalId,
         },
       )
+    } else if (allCountyRegionals && county) {
+      queryBuilder.andWhere('county.MUN_ID = :county', { county })
     } else if (county) {
       queryBuilder.andWhere('county.MUN_ID = :county', { county })
     } else if (stateRegionalId) {
@@ -268,6 +274,7 @@ export class ReportSchoolAbsencesService {
       schoolClass,
       typeSchool,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       stateRegionalId,
       stateId,
       verifyProfileForState,
@@ -313,7 +320,10 @@ export class ReportSchoolAbsencesService {
         .where('SER_TUR.TUR_ESC = :school', { school })
         .andWhere('Series.SER_ATIVO = 1')
         .orderBy('Series.SER_NOME', 'ASC')
-    } else if (municipalityOrUniqueRegionalId) {
+    } else if (
+      municipalityOrUniqueRegionalId ||
+      (allCountyRegionals && county)
+    ) {
       level = 'school'
       queryBuilder = this.connection
         .getRepository(School)
@@ -326,11 +336,16 @@ export class ReportSchoolAbsencesService {
         ])
         .innerJoin('School.ESC_MUN', 'county')
         .orderBy('School.ESC_NOME', 'ASC')
-        .where('School.regionalId = :regionalId', {
+        .where('School.ESC_ATIVO = 1')
+        .andWhere('School.ESC_TIPO = :typeSchool', { typeSchool })
+
+      if (municipalityOrUniqueRegionalId) {
+        queryBuilder.andWhere('School.regionalId = :regionalId', {
           regionalId: municipalityOrUniqueRegionalId,
         })
-        .andWhere('School.ESC_ATIVO = 1')
-        .andWhere('School.ESC_TIPO = :typeSchool', { typeSchool })
+      } else {
+        queryBuilder.andWhere('county.MUN_ID = :county', { county })
+      }
     } else if (county) {
       level = 'municipalityOrUniqueRegionalId'
       const type = !paginationParams?.typeSchool

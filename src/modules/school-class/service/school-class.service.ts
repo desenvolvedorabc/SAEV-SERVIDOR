@@ -323,11 +323,17 @@ export class SchoolClassService {
   async createSchoolClassStudent(student: Student, schoolClass: SchoolClass) {
     const date = new Date()
     const findSchoolClassStudent = await this.schoolClassStudentRepository
-      .createQueryBuilder('class')
-      .leftJoinAndSelect('class.student', 'student')
-      .leftJoinAndSelect('class.schoolClass', 'schoolClass')
-      .where('student.ALU_ID = :id', { id: student.ALU_ID })
-      .orderBy('class.createdAt', 'DESC')
+      .createQueryBuilder('SchoolClassStudent')
+      .select([
+        'SchoolClassStudent.id',
+        'SchoolClassStudent.endDate',
+        'schoolClass.TUR_ID',
+      ])
+      .innerJoin('SchoolClassStudent.schoolClass', 'schoolClass')
+      .where('SchoolClassStudent.studentALUID = :studentId', {
+        studentId: student.ALU_ID,
+      })
+      .orderBy('SchoolClassStudent.createdAt', 'DESC')
       .getOne()
 
     if (findSchoolClassStudent?.schoolClass?.TUR_ID === schoolClass?.TUR_ID) {

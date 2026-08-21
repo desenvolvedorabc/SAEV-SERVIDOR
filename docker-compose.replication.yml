@@ -1,0 +1,56 @@
+services:
+  db-master:
+    container_name: saev-db-master
+    image: mysql/mysql-server:8.0.26
+    command: --default-authentication-plugin=mysql_native_password --innodb_use_native_aio=0 --server-id=1
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: saev
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_USER: saev_user
+      MYSQL_PASSWORD: saev_password
+    volumes:
+      - mysql-master:/var/lib/mysql
+      - ./docker/mysql/master-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - mysql-replication
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-replica:
+    container_name: saev-db-replica
+    image: mysql/mysql-server:8.0.26
+    command: --default-authentication-plugin=mysql_native_password --innodb_use_native_aio=0 --server-id=2
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: saev
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_USER: saev_user
+      MYSQL_PASSWORD: saev_password
+    volumes:
+      - mysql-replica:/var/lib/mysql
+    depends_on:
+      db-master:
+        condition: service_healthy
+    networks:
+      - mysql-replication
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  mysql-replication:
+    driver: bridge
+
+volumes:
+  mysql-master:
+  mysql-replica:

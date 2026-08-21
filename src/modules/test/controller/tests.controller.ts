@@ -13,7 +13,10 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { Pagination } from 'nestjs-typeorm-paginate'
 import { CurrentUser } from 'src/modules/auth/decorator/current-user.decorator'
+import { Role } from 'src/modules/auth/decorator/role.decorator'
+import { RolesGuard } from 'src/modules/auth/guard/roles.guard'
 import { User } from 'src/modules/user/model/entities/user.entity'
+import { RoleProfile } from 'src/shared/enums/role.enum'
 
 import { PaginationParams } from '../../../helpers/params'
 import { JwtAuthGuard } from '../../auth/guard/jwt-auth.guard'
@@ -28,9 +31,10 @@ import { TestsService } from '../service/tests.service'
 export class TestsController {
   constructor(private readonly testsService: TestsService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @Post()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   add(
     @CurrentUser() user: User,
     @Body() createTestDto: CreateTestDto,
@@ -82,8 +86,9 @@ export class TestsController {
     return this.testsService.generateCard(id, getTestHerby)
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   @Put('/:id')
   update(
     @CurrentUser() user: User,
@@ -93,8 +98,9 @@ export class TestsController {
     return this.testsService.update(id, updateTestDto, user)
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   @Put('/:id/toggle-active')
   toggleActive(
     @CurrentUser() user: User,
@@ -105,15 +111,17 @@ export class TestsController {
     return this.testsService.toggleActive(id)
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   @Delete('/question/:questionId')
   deleteQuestion(@Param('questionId') questionId: number) {
     return this.testsService.deleteQuestion(questionId)
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   @Post('/file/upload')
   async uploadFile(@CurrentUser() user: User, @Body() data: any) {
     const { TES_ID, filename, base64 } = data
@@ -127,6 +135,7 @@ export class TestsController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Role([RoleProfile.SAEV, RoleProfile.ESTADO])
   @Post('/manual/upload')
   async uploadAvatar(@CurrentUser() user: User, @Body() data: any) {
     const { TES_ID, filename, base64 } = data

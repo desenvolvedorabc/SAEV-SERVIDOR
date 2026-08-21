@@ -18,8 +18,7 @@
     ]
   },
   "exclude": [
-    "src/tracing.ts",
-    "src/modules/ai/adapters/openai.adapter.ts"
+    "src/tracing.ts"
   ],
   "typedocOptions": {
     "entryPoints": [

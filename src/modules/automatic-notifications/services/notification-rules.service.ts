@@ -95,6 +95,7 @@ export class NotificationRulesService {
         'School.ESC_TIPO as typeSchool',
         'County.MUN_MENSAGEM_WHATSAPP_ATIVO as whatsappActive',
         'County.MUN_MENSAGEM_EMAIL_ATIVO as emailActive',
+        'County.MUN_MENSAGEM_IN_APP_ATIVO as inAppActive',
       ])
       .innerJoin('Rules.school', 'School', 'School.ESC_ATIVO IS TRUE')
       .innerJoin('School.ESC_MUN', 'County')

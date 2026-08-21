@@ -1,5 +1,6 @@
 import { AutomaticNotificationSend } from 'src/modules/automatic-notifications/entities/automatic-notification-send.entity'
 import { StudentTest } from 'src/modules/release-results/model/entities/student-test.entity'
+import { Responsible } from 'src/modules/responsibles/entities/responsible.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { SchoolAbsence } from 'src/modules/school-absences/model/entities/school-absences.entity'
 import { SchoolClass } from 'src/modules/school-class/model/entities/school-class.entity'
@@ -34,6 +35,8 @@ import { UF } from '../../../../shared/enums/uf.enum'
 @Index(['ALU_PEL'], { unique: false })
 @Index(['ALU_STATUS', 'ALU_ESC'], { unique: false })
 @Index(['ALU_NOME', 'ALU_NOME_MAE'], { unique: false })
+@Index(['ALU_ESC', 'ALU_NOME'], { unique: false })
+@Index(['ALU_NOME'], { unique: false })
 @Index(['ALU_INEP'], { unique: false })
 @Index(['ALU_CPF'], { unique: false })
 export class Student {
@@ -129,6 +132,12 @@ export class Student {
   })
   ALU_EMAIL: string
 
+  @ManyToOne(() => Responsible, (responsible) => responsible.students, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'ALU_RES_ID' })
+  ALU_RES: Responsible
+
   @Column({
     type: String,
   })
@@ -213,6 +222,14 @@ export class Student {
 
   @Column({ nullable: true, unique: true })
   ALU_COD: number
+
+  @Column({
+    name: 'ALU_MATRICULA_MUNICIPAL',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  ALU_MATRICULA_MUNICIPAL: string
 
   @OneToMany(() => StudentTest, (test) => test.ALT_ALU)
   TESTS_STUDENT: StudentTest[]

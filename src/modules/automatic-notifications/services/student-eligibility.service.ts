@@ -96,7 +96,7 @@ export class StudentEligibilityService {
       )
       .where('StudentTest.ALT_TES_ID = :testId', { testId })
       .andWhere(
-        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != ''))",
+        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != '') or (stu.ALU_RES_ID IS NOT NULL))",
       )
       .groupBy('stu.ALU_ID')
       .having('COUNT(DISTINCT ans.id) = 0')
@@ -108,16 +108,17 @@ export class StudentEligibilityService {
           .getRepository(StudentTestAnswer)
           .createQueryBuilder('ans')
           .innerJoin(StudentTest, 'st', 'st.ALT_ID = ans.ATR_ALT_ID')
+          .innerJoin('ans.questionTemplate', 'teg')
           .where('ans.ATR_ALT_ID = :altId', { altId: item?.altId })
           .addSelect('COUNT(*)', 'total')
           .addSelect(
-            'SUM(CASE WHEN ans.ATR_CERTO THEN 1 ELSE 0 END)',
+            'SUM(CASE WHEN UPPER(ans.ATR_RESPOSTA) = UPPER(teg.TEG_RESPOSTA_CORRETA) THEN 1 ELSE 0 END)',
             'correct',
           )
           .groupBy('ans.ATR_ALT_ID')
           .having('COUNT(*) > 0')
           .andHaving(
-            '(SUM(CASE WHEN ans.ATR_CERTO THEN 1 ELSE 0 END) * 100) < (:minimumPerformance * COUNT(*))',
+            '(SUM(CASE WHEN UPPER(ans.ATR_RESPOSTA) = UPPER(teg.TEG_RESPOSTA_CORRETA) THEN 1 ELSE 0 END) * 100) < (:minimumPerformance * COUNT(*))',
             {
               minimumPerformance,
             },
@@ -181,7 +182,7 @@ export class StudentEligibilityService {
       .where('SchoolAbsence.IFR_MES = :month', { month })
       .andWhere('SchoolAbsence.IFR_ANO = :year', { year })
       .andWhere(
-        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != ''))",
+        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != '') or (stu.ALU_RES_ID IS NOT NULL))",
       )
       .groupBy('stu.ALU_ID')
       .having('SchoolAbsence.IFR_FALTA > :maxAbsences', { maxAbsences })
@@ -237,7 +238,7 @@ export class StudentEligibilityService {
         { assessmentId },
       )
       .andWhere(
-        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != ''))",
+        "((stu.ALU_EMAIL IS NOT NULL and stu.ALU_EMAIL != '') or (stu.ALU_WHATSAPP IS NOT NULL and stu.ALU_WHATSAPP != '') or (stu.ALU_RES_ID IS NOT NULL))",
       )
       .groupBy('stu.ALU_ID')
       .having('COUNT(DISTINCT ans.id) = 0')

@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
+import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
+import { TestTemplate } from 'src/modules/test/model/entities/test-template.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Repository } from 'typeorm'
 
 import { EvolutionaryLineRepository } from '../repositories/evolutionary-line.repository'
@@ -117,13 +120,22 @@ export class EvolutionaryLineService {
         'TES_DIS.DIS_TIPO',
         'TES_DIS.DIS_COLOR',
         'STUDENTS_TEST.ALT_JUSTIFICATIVA',
+        'STUDENTS_TEST.ALT_DT_ATUALIZACAO',
         'STUDENTS_TEST.ALT_FINALIZADO',
         'TEMPLATE_TEST.TEG_ID',
+        'TEMPLATE_TEST.TEG_ANULADA',
+        'ANSWERS_TEST.ATR_ID',
+        'ANSWERS_TEST.ATR_RESPOSTA',
+        'ANSWERS_TEST.ATR_CERTO',
+        'questionTemplate.TEG_ID',
+        'questionTemplate.TEG_RESPOSTA_CORRETA',
+        'questionTemplate.TEG_ANULADA',
       ])
 
       .leftJoin('Assessment.AVA_TES', 'AVA_TES')
       .leftJoin('AVA_TES.STUDENTS_TEST', 'STUDENTS_TEST')
-      .leftJoinAndSelect('STUDENTS_TEST.ANSWERS_TEST', 'ANSWERS_TEST')
+      .leftJoin('STUDENTS_TEST.ANSWERS_TEST', 'ANSWERS_TEST')
+      .leftJoin('ANSWERS_TEST.questionTemplate', 'questionTemplate')
       .innerJoin(
         'STUDENTS_TEST.ALT_ALU',
         'ALT_ALU',
@@ -141,9 +153,13 @@ export class EvolutionaryLineService {
         const student = test.STUDENTS_TEST[0] as any
 
         if (test.TES_DIS.DIS_TIPO === 'Objetiva') {
-          const QUESTIONS_CERTA = test?.STUDENTS_TEST[0]?.ANSWERS_TEST?.reduce(
-            (acc, cur) => {
-              if (cur.ATR_CERTO) {
+          const ANSWERS_VALID = test?.STUDENTS_TEST[0]?.ANSWERS_TEST?.filter(
+            (a: StudentTestAnswer) => !a?.questionTemplate?.TEG_ANULADA,
+          )
+
+          const QUESTIONS_CERTA = ANSWERS_VALID?.reduce(
+            (acc: number, cur: StudentTestAnswer) => {
+              if (isAnswerCorrect(cur)) {
                 return acc + 1
               } else {
                 return acc
@@ -152,9 +168,13 @@ export class EvolutionaryLineService {
             0,
           )
 
-          const totalRightQuestions = Math.round(
-            (QUESTIONS_CERTA / test?.TEMPLATE_TEST?.length) * 100,
-          )
+          const validTotal =
+            test?.TEMPLATE_TEST?.filter((t: TestTemplate) => !t.TEG_ANULADA)
+              .length ?? 0
+
+          const totalRightQuestions = validTotal
+            ? Math.round((QUESTIONS_CERTA / validTotal) * 100)
+            : 0
 
           const isParticipated = !!student.ALT_FINALIZADO
 
@@ -162,6 +182,7 @@ export class EvolutionaryLineService {
             id: test.TES_DIS.DIS_ID,
             name: test.TES_DIS.DIS_NOME,
             color: test.TES_DIS?.DIS_COLOR,
+            date: student?.ALT_DT_ATUALIZACAO || null,
             isParticipated,
             totalRightQuestions: isParticipated ? totalRightQuestions : 0,
           }
@@ -181,6 +202,7 @@ export class EvolutionaryLineService {
             id: test.TES_DIS.DIS_ID,
             name: test.TES_DIS.DIS_NOME,
             color: test.TES_DIS?.DIS_COLOR,
+            date: student?.ALT_DT_ATUALIZACAO || null,
             isParticipated,
             readType,
             totalRightQuestions: percentageRightQuestions,

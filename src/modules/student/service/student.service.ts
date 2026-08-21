@@ -15,18 +15,21 @@ import { paginateRaw } from 'nestjs-typeorm-paginate'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { StudentTest } from 'src/modules/release-results/model/entities/student-test.entity'
+import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
 import { SchoolClassStudent } from 'src/modules/school-class/model/entities/school-class-student.entity'
 import { SchoolClassService } from 'src/modules/school-class/service/school-class.service'
+import { TestTemplate } from 'src/modules/test/model/entities/test-template.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { RoleProfile } from 'src/shared/enums/role.enum'
 import { Pcd } from 'src/shared/model/entities/pcd.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { paginateData } from 'src/utils/paginate-data'
 import { Between, Connection, Repository } from 'typeorm'
 
 import { editFileName } from '../../../helpers/utils'
-// import { ResponsiblesService } from '../../responsibles/responsibles.service'
+import { ResponsiblesService } from '../../responsibles/responsibles.service'
 import { mapperResponseStudents } from '../mappers'
 import { CreateStudentDto } from '../model/dto/create-student.dto'
 import { GroupStudentDto } from '../model/dto/group-student.dto'
@@ -49,7 +52,7 @@ export class StudentService {
 
     private schoolClassService: SchoolClassService,
 
-    // private responsiblesService: ResponsiblesService,
+    private responsiblesService: ResponsiblesService,
 
     @InjectConnection()
     private readonly connection: Connection,
@@ -289,18 +292,18 @@ export class StudentService {
           } as any)
         }
 
-        // if (createStudentDto.ALU_EMAIL?.trim()) {
-        //   const responsible =
-        //     await this.responsiblesService.findOrCreateByEmail(
-        //       createStudentDto.ALU_EMAIL,
-        //       createStudentDto.ALU_NOME_RESP,
-        //     )
-        //   if (responsible) {
-        //     await this.studentRepository.update(student.ALU_ID, {
-        //       ALU_RES: responsible,
-        //     })
-        //   }
-        // }
+        if (createStudentDto.ALU_EMAIL?.trim()) {
+          const responsible =
+            await this.responsiblesService.findOrCreateByEmail(
+              createStudentDto.ALU_EMAIL,
+              createStudentDto.ALU_NOME_RESP,
+            )
+          if (responsible) {
+            await this.studentRepository.update(student.ALU_ID, {
+              ALU_RES: responsible,
+            })
+          }
+        }
 
         return student as IStudent
       })
@@ -437,13 +440,21 @@ export class StudentService {
                   ),
               )
 
-              const questionsRight = ANSWERS_TEST?.filter(
-                (question) => !!question?.ATR_CERTO,
+              const ANSWERS_VALID = (ANSWERS_TEST ?? []).filter(
+                (a: StudentTestAnswer) => !a?.questionTemplate?.TEG_ANULADA,
+              )
+
+              const questionsRight = ANSWERS_VALID.filter(
+                (question: StudentTestAnswer) => isAnswerCorrect(question),
               ).length
 
-              const totalRightQuestions = Math.round(
-                (questionsRight / test.TEMPLATE_TEST.length) * 100,
-              )
+              const validTotal = test.TEMPLATE_TEST.filter(
+                (t: TestTemplate) => !t.TEG_ANULADA,
+              ).length
+
+              const totalRightQuestions = validTotal
+                ? Math.round((questionsRight / validTotal) * 100)
+                : 0
 
               return {
                 id: test.TES_DIS.DIS_ID,
@@ -655,28 +666,28 @@ export class StudentService {
       delete updateStudentDto.ALU_ATIVO
     }
 
-    // if (updateStudentDto.ALU_EMAIL !== undefined) {
-    //   const currentStudent = await this.studentRepository.findOne({
-    //     where: { ALU_ID },
-    //     relations: ['ALU_RES'],
-    //   })
+    if (updateStudentDto.ALU_EMAIL !== undefined) {
+      const currentStudent = await this.studentRepository.findOne({
+        where: { ALU_ID },
+        relations: ['ALU_RES'],
+      })
 
-    //   const oldEmail = currentStudent?.ALU_RES?.email?.toLowerCase() || null
-    //   const newEmail = updateStudentDto.ALU_EMAIL?.trim()?.toLowerCase() || null
+      const oldEmail = currentStudent?.ALU_RES?.email?.toLowerCase() || null
+      const newEmail = updateStudentDto.ALU_EMAIL?.trim()?.toLowerCase() || null
 
-    //   if (oldEmail !== newEmail) {
-    //     if (newEmail) {
-    //       const responsible =
-    //         await this.responsiblesService.findOrCreateByEmail(
-    //           newEmail,
-    //           updateStudentDto.ALU_NOME_RESP || currentStudent?.ALU_NOME_RESP,
-    //         )
-    //       ;(updateStudentDto as any).ALU_RES = responsible
-    //     } else {
-    //       ;(updateStudentDto as any).ALU_RES = null
-    //     }
-    //   }
-    // }
+      if (oldEmail !== newEmail) {
+        if (newEmail) {
+          const responsible =
+            await this.responsiblesService.findOrCreateByEmail(
+              newEmail,
+              updateStudentDto.ALU_NOME_RESP || currentStudent?.ALU_NOME_RESP,
+            )
+          ;(updateStudentDto as any).ALU_RES = responsible
+        } else {
+          ;(updateStudentDto as any).ALU_RES = null
+        }
+      }
+    }
 
     return this.studentRepository.save(
       { ...updateStudentDto, ALU_ID },
@@ -1086,6 +1097,14 @@ export class StudentService {
     }
   }
 
+  private readonly SORTABLE_COLUMNS: Record<string, string> = {
+    ALU_NOME: 'Student.ALU_NOME',
+    ALU_DT_NASC: 'Student.ALU_DT_NASC',
+    ALU_STATUS: 'Student.ALU_STATUS',
+    ALU_ATIVO: 'Student.ALU_ATIVO',
+    ALU_INEP: 'Student.ALU_INEP',
+  }
+
   private getQueryBuilderForPaginateStudents(
     paginationParams: PaginationParams,
     user: User,
@@ -1110,18 +1129,6 @@ export class StudentService {
       column,
       order,
     } = params
-
-    const columnMap: Record<string, string> = {
-      ALU_ID: 'Student.ALU_ID',
-      ALU_INEP: 'Student.ALU_INEP',
-      ALU_NOME: 'Student.ALU_NOME',
-      ALU_STATUS: 'Student.ALU_STATUS',
-      SER_NOME: 'ALU_SER.SER_NOME',
-      TUR_NOME: 'ALU_TUR.TUR_NOME',
-    }
-    const orderColumn = columnMap[column] ?? 'Student.ALU_NOME'
-    const orderDirection: 'ASC' | 'DESC' =
-      order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'
 
     const userRole = user?.USU_SPE?.role
 
@@ -1149,8 +1156,12 @@ export class StudentService {
       .leftJoin('ALU_ESC.ESC_MUN', 'ESC_MUN')
       .leftJoin('Student.ALU_SER', 'ALU_SER')
       .leftJoin('Student.ALU_TUR', 'ALU_TUR')
-    // .orderBy(orderColumn, orderDirection)
-    // .addOrderBy('Student.ALU_NOME', 'ASC')
+
+    const hasSelectiveFilter = !!(paginationParams.school || schoolClass)
+    if (hasSelectiveFilter) {
+      const sortColumn = this.SORTABLE_COLUMNS[column] ?? 'Student.ALU_NOME'
+      queryBuilder.orderBy(sortColumn, order ?? 'ASC')
+    }
 
     if (search) {
       queryBuilder.andWhere(

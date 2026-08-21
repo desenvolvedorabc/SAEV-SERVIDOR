@@ -3,10 +3,13 @@ import { InjectConnection, InjectRepository } from '@nestjs/typeorm'
 import { Parser } from 'json2csv'
 import { PaginationParams } from 'src/helpers/params'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
+import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { School } from 'src/modules/school/model/entities/school.entity'
 import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
+import { TestTemplate } from 'src/modules/test/model/entities/test-template.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { PerformanceHistoryRepository } from '../repositories/performance-history.repository'
@@ -31,6 +34,7 @@ export class PerformanceHistoryService {
       schoolClass,
       county,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       type,
     } = params
 
@@ -45,7 +49,7 @@ export class PerformanceHistoryService {
       return await this.getStudentsBySchool(params)
     }
 
-    if (municipalityOrUniqueRegionalId) {
+    if (municipalityOrUniqueRegionalId || allCountyRegionals) {
       return await this.getSchoolsByRegional(params)
     }
 
@@ -477,9 +481,14 @@ export class PerformanceHistoryService {
                           ),
                       )
 
-                      const STUDENTS_RIGHT = ANSWERS_TEST?.reduce(
-                        (sum, cur) => {
-                          if (cur?.ATR_CERTO) {
+                      const ANSWERS_VALID = (ANSWERS_TEST ?? []).filter(
+                        (a: StudentTestAnswer) =>
+                          !a?.questionTemplate?.TEG_ANULADA,
+                      )
+
+                      const STUDENTS_RIGHT = ANSWERS_VALID.reduce(
+                        (sum: number, cur: StudentTestAnswer) => {
+                          if (isAnswerCorrect(cur)) {
                             return sum + 1
                           } else {
                             return sum
@@ -488,12 +497,17 @@ export class PerformanceHistoryService {
                         0,
                       )
 
+                      const validTotal =
+                        test?.TEMPLATE_TEST?.filter(
+                          (t: TestTemplate) => !t.TEG_ANULADA,
+                        ).length ?? 0
+
                       return {
                         id: student.ALU_ID,
                         name: student.ALU_NOME,
-                        avg: +Math.round(
-                          (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
-                        ),
+                        avg: validTotal
+                          ? +Math.round((STUDENTS_RIGHT / validTotal) * 100)
+                          : 0,
                       }
                     }),
                   )
@@ -581,6 +595,7 @@ export class PerformanceHistoryService {
     const {
       county,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       school,
       schoolClass,
       type,
@@ -595,7 +610,7 @@ export class PerformanceHistoryService {
     } else if (school && type === 'general') {
       entityLabel = 'Turma'
       typeKey = ''
-    } else if (municipalityOrUniqueRegionalId) {
+    } else if (municipalityOrUniqueRegionalId || allCountyRegionals) {
       entityLabel = 'Escola'
       typeKey = ''
     } else if (county) {

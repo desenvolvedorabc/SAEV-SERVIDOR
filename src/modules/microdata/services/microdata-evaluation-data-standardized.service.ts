@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Assessment } from 'src/modules/assessment/model/entities/assessment.entity'
 import { AssessmentCounty } from 'src/modules/assessment/model/entities/assessment-county.entity'
@@ -6,6 +10,7 @@ import { Test } from 'src/modules/test/model/entities/test.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { Repository } from 'typeorm'
 
+import { EXPORT_ERROR_MESSAGES } from '../constants/export-messages'
 import { ExportEvaluationTemplate } from '../dto/export-evaluation-template.dto'
 import {
   exportFormatSinal,
@@ -21,11 +26,8 @@ import {
 import { MicrodataService } from '../microdata.service'
 import { MicrodataRepository } from '../repositories/microdata.repository'
 import { safeWrite } from '../utils/csv-stream'
-import {
-  addCsvToArchive,
-  finalizeCsvArchive,
-  initialCsvArchive,
-} from '../utils/mult-csv-stream'
+import { addNormalizedDictionariesToArchive } from '../utils/dictionary-stream'
+import { addCsvToArchive, initialCsvArchive } from '../utils/mult-csv-stream'
 
 @Injectable()
 export class MicrodataEvaluationDataStandardizedService {
@@ -54,7 +56,9 @@ export class MicrodataEvaluationDataStandardizedService {
   async export(dto: PaginationMicroDataDto, user: User) {
     const jobPending = await this.microdataService.verifyExistJobPending()
 
-    if (jobPending) return
+    if (jobPending) {
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.JOB_PENDING)
+    }
 
     const findMicrodata = await this.microdataService.verifyExistMicrodata(
       dto,
@@ -62,9 +66,13 @@ export class MicrodataEvaluationDataStandardizedService {
     )
 
     if (findMicrodata) {
-      return
+      throw new ConflictException(EXPORT_ERROR_MESSAGES.RECENT_EXPORT)
     }
 
+    this.processExport(dto, user)
+  }
+
+  private async processExport(dto: PaginationMicroDataDto, user: User) {
     const { county, typeSchool, stateId, exportFormat } = dto
 
     const { microdata } = await this.microdataService.create({
@@ -152,7 +160,20 @@ export class MicrodataEvaluationDataStandardizedService {
         }
       }
 
-      finalizeCsvArchive(streams, archive)
+      Object.values(streams).forEach((s) => s.end())
+      await this.microdataService.appendExtractionMetadata({
+        archive,
+        type: TypeMicrodata.AVALIACAO_NORMALIZADA,
+        user,
+        stateId,
+        countyId: county,
+        typeSchool,
+        year: dto.year,
+        edition: dto.edition,
+        exportFormat,
+      })
+      addNormalizedDictionariesToArchive(archive)
+      archive.finalize()
 
       await this.microdataService.saveDataAndSendEmail({
         user,

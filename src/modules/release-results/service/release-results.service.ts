@@ -631,7 +631,7 @@ export class ReleaseResultsService {
     return this.testTemplateRepository
       .createQueryBuilder('TESTE_GABARITO')
       .select(
-        'TESTE_GABARITO.TEG_ID, TESTE_GABARITO.TEG_MTI_ID, TESTE_GABARITO.TEG_ORDEM',
+        'TESTE_GABARITO.TEG_ID, TESTE_GABARITO.TEG_MTI_ID, TESTE_GABARITO.TEG_ORDEM, TESTE_GABARITO.TEG_ANULADA',
       )
       .where('TESTE_GABARITO.TEG_TES_ID = :idTest', { idTest })
       .orderBy('TESTE_GABARITO.TEG_ORDEM')

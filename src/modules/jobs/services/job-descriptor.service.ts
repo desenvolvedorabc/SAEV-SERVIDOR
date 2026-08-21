@@ -10,6 +10,7 @@ import { ReportEdition } from 'src/modules/reports/model/entities/report-edition
 import { ReportsService } from 'src/modules/reports/service/reports.service'
 import { SubjectTypeEnum } from 'src/modules/subject/model/enum/subject-type.enum'
 import { Test } from 'src/modules/test/model/entities/test.entity'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { JobDescriptorsRepository } from './repositories/job-descriptor.repository'
@@ -32,12 +33,14 @@ export class JobDescriptorsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobDescriptorsRepository.getMunicipalityRegionalByCounty(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedByCounty = _.groupBy(
@@ -55,6 +58,7 @@ export class JobDescriptorsService {
             reportEdition.assessmentId,
             { county: { MUN_ID: reportEdition.MUN_ID }, type },
             ['reports_descriptors'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -80,12 +84,14 @@ export class JobDescriptorsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobDescriptorsRepository.getReportEditionGroupedByTestAndSchoolClass(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedBySchool = _.groupBy(
@@ -102,6 +108,7 @@ export class JobDescriptorsService {
             reportEdition.assessmentId,
             { school: { ESC_ID: reportEdition.ESC_ID }, type },
             ['reports_descriptors'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -127,12 +134,14 @@ export class JobDescriptorsService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobDescriptorsRepository.getReportEditionGroupedByMunicipalityRegional(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedByRegional = _.groupBy(
@@ -149,6 +158,7 @@ export class JobDescriptorsService {
             reportEdition.assessmentId,
             { regionalId: reportEdition.regionalId, type },
             ['reports_descriptors'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -214,11 +224,12 @@ export class JobDescriptorsService {
 
         ANSWERS_TEST?.forEach((answer) => {
           if (
+            !answer?.questionTemplate?.TEG_ANULADA &&
             answer?.questionTemplate?.TEG_MTI?.MTI_ID === descriptor?.MTI_ID
           ) {
             countTotal++
 
-            if (answer?.ATR_CERTO) {
+            if (isAnswerCorrect(answer)) {
               countCorrect++
             }
           }

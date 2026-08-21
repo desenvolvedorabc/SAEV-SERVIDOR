@@ -47,6 +47,13 @@ export class AutomaticNotificationSend {
   statusWhatsapp: SendTutorMessageStatus
 
   @Column({
+    type: 'enum',
+    enum: SendTutorMessageStatus,
+    default: SendTutorMessageStatus.PENDENTE,
+  })
+  statusInApp: SendTutorMessageStatus
+
+  @Column({
     type: 'varchar',
     nullable: false,
     comment:

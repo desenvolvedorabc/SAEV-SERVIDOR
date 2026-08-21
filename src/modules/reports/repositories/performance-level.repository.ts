@@ -31,9 +31,14 @@ export class PerformanceLevelRepository {
         'TES_DIS.DIS_ID',
         'TES_DIS.DIS_NOME',
         'TES_DIS.DIS_TIPO',
+        'TEMPLATE_TEST.TEG_ID',
+        'TEMPLATE_TEST.TEG_ANULADA',
+        'TEG_MTI.MTI_ID',
       ])
       .innerJoin('Assessment.AVA_TES', 'AVA_TES')
       .innerJoin('AVA_TES.TES_DIS', 'TES_DIS', 'TES_DIS.DIS_NOME != "Leitura"')
+      .leftJoin('AVA_TES.TEMPLATE_TEST', 'TEMPLATE_TEST')
+      .leftJoin('TEMPLATE_TEST.TEG_MTI', 'TEG_MTI')
       .andWhere('AVA_TES.TES_SER_ID = :serieId', { serieId })
       .andWhere('Assessment.AVA_ID = :assessmentId', {
         assessmentId,
@@ -103,6 +108,13 @@ export class PerformanceLevelRepository {
         .andWhere('school.regionalId = :municipalityOrUniqueRegionalId', {
           municipalityOrUniqueRegionalId,
         })
+    } else if (paginationParams.allCountyRegionals && county) {
+      queryBuilder
+        .addSelect(['school.ESC_ID', 'school.ESC_NOME', 'school.ESC_TIPO'])
+        .innerJoin('ReportEdition.school', 'school')
+        .innerJoin('school.ESC_MUN', 'county')
+        .andWhere('county.MUN_ID = :county', { county })
+        .andWhere('school.regionalId IS NOT NULL')
     } else if (county) {
       queryBuilder
         .addSelect(['regional.id', 'regional.name'])
@@ -111,6 +123,7 @@ export class PerformanceLevelRepository {
         .andWhere('regional.countyId = :countyId', {
           countyId: county,
         })
+        .andWhere('ReportEdition.school IS NULL')
     }
 
     if (!typeSchool && verifyProfileForState) {

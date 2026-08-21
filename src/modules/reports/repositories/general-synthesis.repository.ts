@@ -72,6 +72,8 @@ export class GeneralSynthesisRepository {
         'ANSWERS_TEST.ATR_RESPOSTA',
         'ANSWERS_TEST.ATR_CERTO',
         'questionTemplate.TEG_ID',
+        'questionTemplate.TEG_RESPOSTA_CORRETA',
+        'questionTemplate.TEG_ANULADA',
       ])
       .leftJoin('StudentTest.ANSWERS_TEST', 'ANSWERS_TEST')
       .leftJoin('ANSWERS_TEST.questionTemplate', 'questionTemplate')
@@ -121,6 +123,8 @@ export class GeneralSynthesisRepository {
         'ANSWERS_TEST.ATR_RESPOSTA',
         'ANSWERS_TEST.ATR_CERTO',
         'questionTemplate.TEG_ID',
+        'questionTemplate.TEG_RESPOSTA_CORRETA',
+        'questionTemplate.TEG_ANULADA',
       ])
       .leftJoin('StudentTest.ALT_ALU', 'ALT_ALU')
       .leftJoin('StudentTest.ANSWERS_TEST', 'ANSWERS_TEST')
@@ -161,7 +165,7 @@ export class GeneralSynthesisRepository {
       .createQueryBuilder('ReportEdition')
       .select(selectDefaultReportSubject)
       .addSelect([
-        'ReportEdition.id as reportEditionId',
+        'MIN(ReportEdition.id) as reportEditionId',
         'TES_DIS.DIS_ID as subjectId',
         'TES_DIS.DIS_NOME as subjectName',
         'TES_SER.SER_ID as serieId',
@@ -180,7 +184,7 @@ export class GeneralSynthesisRepository {
       .andWhere('ReportEdition.editionAVAID = :assessmentId', {
         assessmentId: edition,
       })
-      .orderBy('ReportEdition.id', 'DESC')
+      .orderBy('MIN(ReportEdition.id)', 'DESC')
 
     if (typeSchool) {
       queryBuilder.andWhere('ReportEdition.type = :type', { type: typeSchool })
@@ -204,7 +208,9 @@ export class GeneralSynthesisRepository {
           'county.stateRegionalId = :stateRegionalId',
           { stateRegionalId },
         )
-        .groupBy('test.TES_ID, REGIONAL.countyId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID')
+        .groupBy(
+          'test.TES_ID, REGIONAL.countyId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
+        )
     } else if (stateId) {
       queryBuilder
         .addSelect(['stateRegional.id as id', 'stateRegional.name as name'])
@@ -216,7 +222,7 @@ export class GeneralSynthesisRepository {
         .innerJoin('county.stateRegional', 'stateRegional')
         .andWhere('county.stateId = :stateId', { stateId })
         .groupBy(
-          'REPORT_SUBJECT.testTESID, county.stateRegionalId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
+          'REPORT_SUBJECT.testTESID, county.stateRegionalId, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
         )
     } else {
       queryBuilder
@@ -232,7 +238,7 @@ export class GeneralSynthesisRepository {
         )
         .andWhere('county.MUN_PARCEIRO_EPV IS TRUE')
         .groupBy(
-          'test.TES_ID, ReportEdition.countyMUNID, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, ReportEdition.id, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
+          'test.TES_ID, ReportEdition.countyMUNID, ReportEdition.editionAVAID, REPORT_SUBJECT.type, REPORT_SUBJECT.name, TES_DIS.DIS_ID, TES_DIS.DIS_NOME, TES_SER.SER_ID',
         )
     }
 
@@ -351,6 +357,13 @@ export class GeneralSynthesisRepository {
         .andWhere('school.regionalId = :municipalityOrUniqueRegionalId', {
           municipalityOrUniqueRegionalId,
         })
+    } else if (paginationParams.allCountyRegionals && county) {
+      queryBuilder
+        .addSelect(['school.ESC_ID', 'school.ESC_NOME', 'school.ESC_TIPO'])
+        .innerJoin('ReportEdition.school', 'school')
+        .innerJoin('school.ESC_MUN', 'county')
+        .andWhere('county.MUN_ID = :county', { county })
+        .andWhere('school.regionalId IS NOT NULL')
     } else if (county) {
       queryBuilder
         .addSelect(['regional.id', 'regional.name'])
@@ -359,6 +372,7 @@ export class GeneralSynthesisRepository {
         .andWhere('regional.countyId = :countyId', {
           countyId: county,
         })
+        .andWhere('ReportEdition.school IS NULL')
     }
 
     if (!typeSchool && verifyProfileForState) {

@@ -91,4 +91,6 @@ export class Test {
 
   @Column({ nullable: true, unique: true })
   TES_OLD_ID: number
+
+  hasLaunches?: boolean
 }

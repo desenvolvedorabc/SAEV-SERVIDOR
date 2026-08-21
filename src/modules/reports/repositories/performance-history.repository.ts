@@ -35,6 +35,8 @@ export class PerformanceHistoryRepository {
         'ANSWERS_TEST.ATR_RESPOSTA',
         'ANSWERS_TEST.ATR_CERTO',
         'questionTemplate.TEG_ID',
+        'questionTemplate.TEG_RESPOSTA_CORRETA',
+        'questionTemplate.TEG_ANULADA',
       ])
       .leftJoin('StudentTest.ANSWERS_TEST', 'ANSWERS_TEST')
       .leftJoin('ANSWERS_TEST.questionTemplate', 'questionTemplate')
@@ -196,6 +198,13 @@ export class PerformanceHistoryRepository {
         .andWhere('school.regionalId = :municipalityOrUniqueRegionalId', {
           municipalityOrUniqueRegionalId,
         })
+    } else if (paginationParams.allCountyRegionals && county) {
+      queryBuilder
+        .addSelect(['school.ESC_ID', 'school.ESC_NOME', 'school.ESC_TIPO'])
+        .innerJoin('ReportEdition.school', 'school')
+        .innerJoin('school.ESC_MUN', 'county')
+        .andWhere('county.MUN_ID = :county', { county })
+        .andWhere('school.regionalId IS NOT NULL')
     } else if (county) {
       queryBuilder
         .addSelect(['regional.id', 'regional.name'])

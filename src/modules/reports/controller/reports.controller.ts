@@ -4,6 +4,7 @@ import { Response } from 'express'
 import { PaginationParams } from 'src/helpers/params'
 import { CurrentUser } from 'src/modules/auth/decorator/current-user.decorator'
 import { JwtAuthGuard } from 'src/modules/auth/guard/jwt-auth.guard'
+import { JwtResponsibleAuthGuard } from 'src/modules/responsibles/guard/jwt-responsible-auth.guard'
 import { User } from 'src/modules/user/model/entities/user.entity'
 
 import { StudentResultDto } from '../model/dto/student-result.dto'
@@ -106,6 +107,16 @@ export class ReportsController {
   @ApiBearerAuth()
   @Get('/evolutionary-line-student/:studentId/:year')
   evolutionaryLineByStudent(
+    @Param('studentId') studentId: string,
+    @Param('year') year: string,
+  ) {
+    return this.reportsService.evolutionaryLineByStudent(year, studentId)
+  }
+
+  @UseGuards(JwtResponsibleAuthGuard)
+  @ApiBearerAuth()
+  @Get('/app/evolutionary-line-student/:studentId/:year')
+  evolutionaryLineByStudentApp(
     @Param('studentId') studentId: string,
     @Param('year') year: string,
   ) {

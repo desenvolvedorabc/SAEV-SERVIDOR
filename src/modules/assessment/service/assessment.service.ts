@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { isPast, subDays } from 'date-fns'
+import { isPast } from 'date-fns'
 import { paginateRaw, Pagination } from 'nestjs-typeorm-paginate'
 import { PaginationParams } from 'src/helpers/params'
 import { County } from 'src/modules/counties/model/entities/county.entity'
@@ -181,7 +181,17 @@ export class AssessmentsService {
         )
       }
 
-      if (isPast(editionEnd)) {
+      const savedStart = assessment.AVA_DT_INICIO
+        ? new Date(assessment.AVA_DT_INICIO).getTime()
+        : null
+      const savedEnd = assessment.AVA_DT_FIM
+        ? new Date(assessment.AVA_DT_FIM).getTime()
+        : null
+      const datesChanged =
+        editionStart.getTime() !== savedStart ||
+        editionEnd.getTime() !== savedEnd
+
+      if (datesChanged && isPast(editionEnd)) {
         throw new BadRequestException(
           'A data de fim da edição não pode estar no passado.',
         )
@@ -403,20 +413,20 @@ export class AssessmentsService {
 
       const assessmentCounty = existingAssessmentCounty
         ? {
-          ...existingAssessmentCounty,
-          AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
-          AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
-          AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
-        }
+            ...existingAssessmentCounty,
+            AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
+            AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
+            AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
+          }
         : this.assessmentCountiesRepository.create({
-          AVM_AVA: assessment,
-          AVM_MUN: county,
-          AVM_TIPO: countyDto.AVM_TIPO,
-          AVM_ATIVO: true,
-          AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
-          AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
-          AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
-        })
+            AVM_AVA: assessment,
+            AVM_MUN: county,
+            AVM_TIPO: countyDto.AVM_TIPO,
+            AVM_ATIVO: true,
+            AVM_DT_INICIO: countyDto.AVM_DT_INICIO || null,
+            AVM_DT_FIM: countyDto.AVM_DT_FIM || null,
+            AVM_DT_DISPONIVEL: countyDto.AVM_DT_DISPONIVEL || null,
+          })
 
       await this.assessmentCountiesRepository.save(assessmentCounty, {
         data: user,
@@ -819,7 +829,7 @@ export class AssessmentsService {
       throw new NotFoundException('Município não encontrado.')
     }
 
-    const calculatedAvailabilityDate = subDays(new Date(dto.AVM_DT_INICIO), 7)
+    const calculatedAvailabilityDate = new Date()
 
     if (assessmentCounty) {
       assessmentCounty.AVM_DT_INICIO = dto.AVM_DT_INICIO

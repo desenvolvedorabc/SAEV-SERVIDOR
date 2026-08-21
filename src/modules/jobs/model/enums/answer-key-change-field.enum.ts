@@ -1,0 +1,5 @@
+export enum AnswerKeyChangeField {
+  RESPOSTA_CORRETA = 'RESPOSTA_CORRETA',
+  ANULADA = 'ANULADA',
+  DESCRITOR = 'DESCRITOR',
+}

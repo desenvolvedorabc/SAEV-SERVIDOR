@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@google-cloud/opentelemetry-cloud-trace-exporter": "^3.0.0",
+    "@google-cloud/tasks": "^6.2.2",
     "@google-cloud/trace-agent": "^7.1.2",
     "@microsoft/tsdoc": "^0.13.2",
     "@nestjs/common": "^7.6.15",
@@ -75,6 +76,8 @@
     "exceljs": "^4.3.0",
     "fast-csv": "^5.0.2",
     "fflate": "^0.8.0",
+    "firebase-admin": "^13.7.0",
+    "google-auth-library": "^10.6.2",
     "json2csv": "^5.0.7",
     "lodash": "^4.17.21",
     "module-alias": "^2.2.2",

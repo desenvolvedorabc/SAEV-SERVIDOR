@@ -107,6 +107,13 @@ export class NotEvaluatedRepository {
         .andWhere('school.regionalId = :municipalityOrUniqueRegionalId', {
           municipalityOrUniqueRegionalId,
         })
+    } else if (params.allCountyRegionals && county) {
+      queryBuilder
+        .addSelect(['school.ESC_ID', 'school.ESC_NOME', 'school.ESC_TIPO'])
+        .innerJoin('ReportEdition.school', 'school')
+        .innerJoin('school.ESC_MUN', 'county')
+        .andWhere('county.MUN_ID = :county', { county })
+        .andWhere('school.regionalId IS NOT NULL')
     } else if (county) {
       queryBuilder
         .addSelect(['regional.id', 'regional.name'])

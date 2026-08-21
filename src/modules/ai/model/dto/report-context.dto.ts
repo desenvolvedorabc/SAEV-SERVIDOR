@@ -10,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-class BreadcrumbItemDto {
+export class BreadcrumbItemDto {
   @ApiProperty({ type: String })
   @IsString()
   @MaxLength(100)
@@ -22,7 +22,7 @@ class BreadcrumbItemDto {
   name: string
 }
 
-class SerieDto {
+export class SerieDto {
   @ApiProperty({ type: String })
   @IsString()
   @MaxLength(100)
@@ -35,21 +35,21 @@ class SerieDto {
   SER_NUMBER?: number
 }
 
-class YearDto {
+export class YearDto {
   @ApiProperty({ type: String })
   @IsString()
   @MaxLength(10)
   name: string
 }
 
-class EditionDto {
+export class EditionDto {
   @ApiProperty({ type: String })
   @IsString()
   @MaxLength(255)
   name: string
 }
 
-class LocationDto {
+export class LocationDto {
   @ApiProperty({ type: String })
   @IsString()
   @MaxLength(255)

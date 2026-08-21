@@ -7,8 +7,10 @@ import { StudentTest } from 'src/modules/release-results/model/entities/student-
 import { StudentTestAnswer } from 'src/modules/release-results/model/entities/student-test-answer.entity'
 import { TypeSchoolEnum } from 'src/modules/school/model/enum/type-school.enum'
 import { Student } from 'src/modules/student/model/entities/student.entity'
+import { TestTemplate } from 'src/modules/test/model/entities/test-template.entity'
 import { User } from 'src/modules/user/model/entities/user.entity'
 import { formatParamsByProfile } from 'src/utils/format-params-by-profile'
+import { isAnswerCorrect } from 'src/utils/is-answer-correct'
 import { Connection, Repository } from 'typeorm'
 
 import { ReportEdition } from '../model/entities/report-edition.entity'
@@ -146,6 +148,7 @@ export class PerformanceLevelService {
                 const answersDescriptors: StudentTestAnswer[] = []
 
                 ANSWERS_TEST?.forEach((answer) => {
+                  if (answer?.questionTemplate?.TEG_ANULADA) return
                   if (
                     answer?.questionTemplate?.TEG_MTI?.MTI_ID ===
                     data?.TEG_MTI?.MTI_ID
@@ -153,14 +156,14 @@ export class PerformanceLevelService {
                     answersDescriptors.push(answer)
                   }
                   totalQuestionSchoolClass += 1
-                  if (answer?.ATR_CERTO) {
+                  if (isAnswerCorrect(answer)) {
                     totalRightSchoolClass += 1
                   }
                 })
 
                 const STUDENTS_RIGHT = answersDescriptors.reduce(
                   (sum, cur) => {
-                    if (cur.ATR_CERTO) {
+                    if (isAnswerCorrect(cur)) {
                       return {
                         right: sum.right + 1,
                         total: sum.total + 1,
@@ -182,6 +185,7 @@ export class PerformanceLevelService {
                   id: data.TEG_ID,
                   cod: data.TEG_MTI?.MTI_CODIGO,
                   description: data.TEG_MTI?.MTI_DESCRITOR,
+                  TEG_ANULADA: data.TEG_ANULADA ?? false,
                   totalCorrect: STUDENTS_RIGHT.right,
                   total: STUDENTS_RIGHT.total,
                   value:
@@ -193,22 +197,32 @@ export class PerformanceLevelService {
 
               totalDescriptors.push(...descriptors)
 
-              const STUDENTS_RIGHT = ANSWERS_TEST?.reduce((sum, cur) => {
-                if (cur?.ATR_CERTO) {
-                  return sum + 1
-                } else {
-                  return sum
-                }
-              }, 0)
+              const ANSWERS_VALID = (ANSWERS_TEST ?? []).filter(
+                (a: StudentTestAnswer) => !a?.questionTemplate?.TEG_ANULADA,
+              )
+
+              const STUDENTS_RIGHT = ANSWERS_VALID.reduce(
+                (sum: number, cur: StudentTestAnswer) => {
+                  if (isAnswerCorrect(cur)) {
+                    return sum + 1
+                  } else {
+                    return sum
+                  }
+                },
+                0,
+              )
+
+              const validTotal =
+                test?.TEMPLATE_TEST?.filter((t: TestTemplate) => !t.TEG_ANULADA)
+                  .length ?? 0
 
               return {
                 id: student.ALU_ID,
                 name: student.ALU_NOME,
-                value: STUDENTS_RIGHT
-                  ? +Math.round(
-                      (STUDENTS_RIGHT / test?.TEMPLATE_TEST?.length) * 100,
-                    )
-                  : 0,
+                value:
+                  STUDENTS_RIGHT && validTotal
+                    ? +Math.round((STUDENTS_RIGHT / validTotal) * 100)
+                    : 0,
                 descriptors,
               }
             }),
@@ -281,6 +295,7 @@ export class PerformanceLevelService {
       serie,
       schoolClass,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       stateId,
       stateRegionalId,
     } = params
@@ -308,6 +323,21 @@ export class PerformanceLevelService {
         const totalDescriptors = []
         let totalGradesStudents = 0
         let countPresentStudents = 0
+
+        const templatesByMtiId = _.groupBy(
+          (test.TEMPLATE_TEST ?? []).filter(
+            (t: TestTemplate) => t.TEG_MTI?.MTI_ID,
+          ),
+          (t: TestTemplate) => t.TEG_MTI.MTI_ID,
+        )
+        const nullifiedMtiIds = new Set(
+          Object.entries(templatesByMtiId)
+            .filter(([, templates]) =>
+              templates.every((t: TestTemplate) => t.TEG_ANULADA),
+            )
+            .map(([mtiId]) => Number(mtiId)),
+        )
+
         const items = reportsDescriptors.map((reportEditionDescriptor) => {
           const editionReportSubject = reports.find(
             (editionReportSubject) =>
@@ -321,7 +351,7 @@ export class PerformanceLevelService {
           if (school) {
             id = reportEditionDescriptor.schoolClass?.TUR_ID
             name = reportEditionDescriptor.schoolClass?.TUR_NOME
-          } else if (municipalityOrUniqueRegionalId) {
+          } else if (municipalityOrUniqueRegionalId || allCountyRegionals) {
             id = reportEditionDescriptor.school?.ESC_ID
             name = reportEditionDescriptor.school?.ESC_NOME
             type = reportEditionDescriptor.school?.ESC_TIPO
@@ -350,6 +380,9 @@ export class PerformanceLevelService {
                   cod: reportDescriptor.descriptor.MTI_CODIGO,
                   testId: reportDescriptor.test.TES_ID,
                   description: reportDescriptor.descriptor.MTI_DESCRITOR,
+                  TEG_ANULADA: nullifiedMtiIds.has(
+                    reportDescriptor.descriptor.MTI_ID,
+                  ),
                   totalCorrect: +reportDescriptor.totalCorrect,
                   total: +reportDescriptor.total,
                   value:
@@ -424,6 +457,7 @@ export class PerformanceLevelService {
             id: dataGroupped[key][0]?.id,
             cod: dataGroupped[key][0]?.cod,
             description: dataGroupped[key][0]?.description,
+            TEG_ANULADA: dataGroupped[key][0]?.TEG_ANULADA ?? false,
             value: Math.round((reduce.totalCorrect / reduce.total) * 100),
           }
         })

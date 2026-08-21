@@ -9,25 +9,32 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import configuration from './config/configuration'
 import { DatabaseConfig } from './config/database-config.factory'
+import { DatabaseMonitorService } from './database-monitor.service'
 import { AiModule } from './modules/ai/ai.module'
 import { AreaModule } from './modules/area/area.module'
 import { AssessmentsModule } from './modules/assessment/assessment.module'
 import { AssessmentOnlineModule } from './modules/assessment-online/assessment-online.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { AutomaticNotificationsModule } from './modules/automatic-notifications/automatic-notifications.module'
+import { BatchOperationsModule } from './modules/batch-operations/batch-operations.module'
+import { BatchOperationsWorkerModule } from './modules/batch-operations/worker/batch-operations-worker.module'
 import { CountiesModule } from './modules/counties/counties.module'
 import { ExternalReportsModule } from './modules/external-reports/external-reports.module'
 import { FileModule } from './modules/files/file.module'
+import { FirebasePushService } from './modules/firebase/firebase-push.service'
 import { HeadquartersModule } from './modules/headquarters/headquarters.module'
 import { JobsModule } from './modules/jobs/jobs.module'
+import { WorkerHttpModule } from './modules/jobs/worker/worker-http.module'
 import { MessageTemplatesModule } from './modules/message-templates/message-templates.module'
 import { MessagesModule } from './modules/messages/message.module'
 import { MicrodataModule } from './modules/microdata/microdata.module'
 import { NotificationsModule } from './modules/notifications/notification.module'
 import { ProfileModule } from './modules/profile/profile.module'
+import { PushNotificationModule } from './modules/push-notification/push-notification.module'
 import { RegionalModule } from './modules/regional/regional.module'
 import { ReleaseResultsModule } from './modules/release-results/release-results.module'
 import { ReportsModule } from './modules/reports/reports.module'
+import { ResponsiblesModule } from './modules/responsibles/responsibles.module'
 import { SchoolModule } from './modules/school/school.module'
 import { SchoolAbsencesModule } from './modules/school-absences/school-absences.module'
 import { SchoolClassModule } from './modules/school-class/school-class.module'
@@ -38,13 +45,15 @@ import { StudentModule } from './modules/student/student.module'
 import { SubjectModule } from './modules/subject/subject.module'
 import { SystemLogsModule } from './modules/system-logs/system-logs.module'
 import { TeacherModule } from './modules/teacher/teacher.module'
+import { TermsModule } from './modules/terms/terms.module'
 import { TestsModule } from './modules/test/tests.module'
 import { TransferModule } from './modules/transfer/transfer.module'
 import { TutorMessagesModule } from './modules/tutor-messages/tutor-messages.module'
 import { TwilioModule } from './modules/twilio/twilio.module'
 import { UserModule } from './modules/user/user.module'
 import { EverythingSubscriber } from './utils/event-subscriber'
-import { DatabaseMonitorService } from './database-monitor.service'
+
+const isWorker = process.env.APP_ROLE === 'worker'
 
 @Module({
   imports: [
@@ -73,6 +82,7 @@ import { DatabaseMonitorService } from './database-monitor.service'
         },
       },
     }),
+    PushNotificationModule.forRoot({ useClass: FirebasePushService }),
     AssessmentsModule,
     AuthModule,
     UserModule,
@@ -107,12 +117,12 @@ import { DatabaseMonitorService } from './database-monitor.service'
     AutomaticNotificationsModule,
     TwilioModule,
     AiModule,
+    ResponsiblesModule,
+    TermsModule,
+    BatchOperationsModule,
+    ...(isWorker ? [WorkerHttpModule, BatchOperationsWorkerModule] : []),
   ],
   controllers: [AppController],
-  providers: [
-    AppService, 
-    EverythingSubscriber,
-    DatabaseMonitorService,
-  ],
+  providers: [AppService, EverythingSubscriber, DatabaseMonitorService],
 })
 export class AppModule {}

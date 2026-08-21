@@ -146,6 +146,12 @@ export class CreateCountyDto {
     type: Boolean,
   })
   @IsBoolean()
+  MUN_MENSAGEM_IN_APP_ATIVO: boolean
+
+  @ApiProperty({
+    type: Boolean,
+  })
+  @IsBoolean()
   MUN_LEITURA_HERBY_ATIVO: boolean
 
   @ApiProperty()

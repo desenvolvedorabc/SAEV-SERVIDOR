@@ -273,4 +273,10 @@ export class CreateStudentDto {
   ALU_STATUS: string
 
   ALU_DEFICIENCIA_BY_IMPORT?: string
+
+  @ApiProperty({ type: String, required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  ALU_MATRICULA_MUNICIPAL?: string
 }

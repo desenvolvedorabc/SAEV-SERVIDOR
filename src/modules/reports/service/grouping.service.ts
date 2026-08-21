@@ -21,6 +21,7 @@ export class GroupingService {
       schoolClass,
       stateRegionalId,
       municipalityOrUniqueRegionalId,
+      allCountyRegionals,
       stateId,
     } = params
 
@@ -55,6 +56,16 @@ export class GroupingService {
     if (municipalityOrUniqueRegionalId) {
       const data =
         await this.reportGroupingRepository.getGroupingByMunicipality(params)
+
+      return {
+        ...data,
+        ...dataGrouped,
+      }
+    }
+
+    if (allCountyRegionals && county) {
+      const data =
+        await this.reportGroupingRepository.getGroupingByAllMunicipality(params)
 
       return {
         ...data,

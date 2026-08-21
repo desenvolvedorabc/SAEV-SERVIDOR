@@ -11,6 +11,7 @@ const dirs = [
   './public/test/manual',
   './public/file/',
   './public/microdata/',
+  './public/responsible/avatar',
 ]
 
 export function createDirs() {

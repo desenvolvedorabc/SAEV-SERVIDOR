@@ -26,12 +26,14 @@ export class JobNotEvaluatedService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportNotEvaluated =
       await this.jobNotEvaluatedRepository.getMunicipalityRegionalByCounty(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportNotEvaluatedGroupedByCounty = _.groupBy(
@@ -49,6 +51,7 @@ export class JobNotEvaluatedService {
             reportEdition.assessmentId,
             { county: { MUN_ID: reportEdition.MUN_ID }, type },
             ['reports_not_evaluated'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -85,12 +88,14 @@ export class JobNotEvaluatedService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportNotEvaluated =
       await this.jobNotEvaluatedRepository.getReportNotEvaluatedGroupedByTestAndSchoolClass(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportNotEvaluatedGroupedBySchool = _.groupBy(
@@ -107,6 +112,7 @@ export class JobNotEvaluatedService {
             reportNotEvaluated.assessmentId,
             { school: { ESC_ID: reportNotEvaluated.ESC_ID }, type },
             ['reports_not_evaluated'],
+            affectedTestIds,
           )
 
         await Promise.all(
@@ -143,12 +149,14 @@ export class JobNotEvaluatedService {
     assessmentId: number,
     countyId: number,
     type: TypeAssessmentEnum,
+    affectedTestIds?: number[],
   ) {
     const reportEditions =
       await this.jobNotEvaluatedRepository.getReportEditionGroupedByMunicipalityRegional(
         assessmentId,
         countyId,
         type,
+        affectedTestIds,
       )
 
     const reportEditionsGroupedByRegional = _.groupBy(
@@ -165,6 +173,7 @@ export class JobNotEvaluatedService {
             reportEdition.assessmentId,
             { regionalId: reportEdition.regionalId, type },
             ['reports_not_evaluated'],
+            affectedTestIds,
           )
 
         await Promise.all(

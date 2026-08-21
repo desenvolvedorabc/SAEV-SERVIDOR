@@ -88,4 +88,10 @@ export class CreateTutorMessageDto {
   @Type(() => Number)
   @IsNotEmpty()
   forEmail: 1 | 0 = 0
+
+  @ApiPropertyOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @IsNotEmpty()
+  forInApp: 1 | 0 = 0
 }

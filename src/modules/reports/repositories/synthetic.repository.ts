@@ -26,7 +26,7 @@ export class ReportSyntheticRepository {
       verifyProfileForState,
     } = paginationParams
 
-    if (!municipalityOrUniqueRegionalId) {
+    if (!municipalityOrUniqueRegionalId && !school && !schoolClass) {
       return await this.getReportEditionGroupedByCounty(paginationParams)
     }
 
@@ -41,6 +41,8 @@ export class ReportSyntheticRepository {
         'TES_DIS.DIS_TIPO',
         'question.TEG_ID',
         'question.TEG_ORDEM',
+        'question.TEG_ANULADA',
+        'question.TEG_NIVEL',
         'TEG_MTI.MTI_DESCRITOR',
       ])
       .innerJoin('ReportEdition.reportsSubjects', 'reportsSubjects')
@@ -122,6 +124,8 @@ export class ReportSyntheticRepository {
         'TES_DIS.DIS_NOME as subjectName',
         'TES_DIS.DIS_TIPO as subjectType',
         'question.TEG_ORDEM as questionOrder',
+        'question.TEG_ANULADA as questionAnulada',
+        'question.TEG_NIVEL as questionLevel',
         'TEG_MTI.MTI_DESCRITOR as descriptor',
       ])
       .innerJoin(
@@ -204,6 +208,8 @@ export class ReportSyntheticRepository {
             question: {
               TEG_ID: report?.questionId,
               TEG_ORDEM: report?.questionOrder,
+              TEG_ANULADA: !!report?.questionAnulada,
+              TEG_NIVEL: report?.questionLevel ?? null,
               TEG_MTI: {
                 MTI_DESCRITOR: report?.descriptor,
               },

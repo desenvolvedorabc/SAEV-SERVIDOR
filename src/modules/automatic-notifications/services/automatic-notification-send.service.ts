@@ -153,7 +153,7 @@ export class AutomaticNotificationSendService {
     rule: NotificationRuleMapper,
     eligibleStudents: any[],
   ): Promise<any[]> {
-    if (eligibleStudents?.length === 0) {
+    if (!eligibleStudents || eligibleStudents?.length === 0) {
       return
     }
 

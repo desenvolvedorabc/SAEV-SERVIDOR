@@ -31,11 +31,11 @@ export class MicrodataController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/export-infrequency')
-  exportInfrequency(
+  async exportInfrequency(
     @Query() params: PaginationMicroDataDto,
     @CurrentUser() user: User,
   ) {
-    this.microdataService.exportInfrequencyData(params, user)
+    await this.microdataService.exportInfrequencyData(params, user)
   }
 
   @UseGuards(JwtAuthGuard)
@@ -58,31 +58,31 @@ export class MicrodataController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/export-students')
-  exportStudents(
+  async exportStudents(
     @Query() params: PaginationMicroDataDto,
     @CurrentUser() user: User,
   ) {
-    this.microdataService.exportStudentsData(params, user)
+    await this.microdataService.exportStudentsData(params, user)
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/export-evaluation-data')
-  exportEvaluationData(
+  async exportEvaluationData(
     @Query() params: PaginationMicroDataDto,
     @CurrentUser() user: User,
   ) {
-    this.microdataService.exportEvaluationData(params, user)
+    await this.microdataService.exportEvaluationData(params, user)
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('/export-evaluation-data-standardized')
-  exportEvaluationDataStandardized(
+  async exportEvaluationDataStandardized(
     @Query() params: PaginationMicroDataDto,
     @CurrentUser() user: User,
   ) {
-    this.microdataStandardizedService.export(params, user)
+    await this.microdataStandardizedService.export(params, user)
   }
 
   @Get('/file/:filepath')

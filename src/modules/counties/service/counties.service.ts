@@ -116,7 +116,11 @@ export class CountiesService {
   }
 
   async getCountiesReport(paginateParams: PaginationParams, user: User) {
-    const { typeSchool: rawTypeSchool } = formatParamsByProfile(paginateParams, user, true)
+    const { typeSchool: rawTypeSchool } = formatParamsByProfile(
+      paginateParams,
+      user,
+      true,
+    )
     const typeSchool =
       rawTypeSchool ??
       (user?.USU_SPE?.role === RoleProfile.ESTADO

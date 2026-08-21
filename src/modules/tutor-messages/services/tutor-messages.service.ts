@@ -26,11 +26,7 @@ import {
   SendTutorMessageStatus,
 } from '../entities/send-tutor-message.entity'
 import { TutorMessage } from '../entities/tutor-message.entity'
-import {
-  AggregatedTutorMessageStatus,
-  decideChannelStatus,
-  decideFinalStatus,
-} from '../helpers'
+import { decideChannelStatus, decideFinalStatus } from '../helpers'
 import { SendTutorMessagesService } from './send-tutor-messages.service'
 
 @Injectable()
@@ -50,13 +46,14 @@ export class TutorMessagesService {
   async create(dto: CreateTutorMessageDto) {
     const schoolId: number = dto?.filters?.schoolId
 
-    const { activeEmail, activeWpp } =
-      await this.verifyCountyWppOrEmailActive(schoolId)
+    const { activeEmail, activeWpp, activeInApp } =
+      await this.verifyCountyChannelsActive(schoolId)
 
     const forWpp = activeWpp && !!dto?.forWpp
     const forEmail = activeEmail && !!dto?.forEmail
+    const forInApp = activeInApp && !!dto?.forInApp
 
-    if (!forWpp && !forEmail) {
+    if (!forWpp && !forEmail && !forInApp) {
       throw new ForbiddenException('Selecione um canal ativo.')
     }
 
@@ -86,6 +83,7 @@ export class TutorMessagesService {
           tutorMessageId: messageTemplate.id,
           forEmail,
           forWpp,
+          forInApp,
         },
         queryRunner.manager,
       )
@@ -230,9 +228,10 @@ export class TutorMessagesService {
         'Students.ALU_ID as ALU_ID',
         'Students.ALU_EMAIL as ALU_EMAIL',
         'Students.ALU_WHATSAPP as ALU_WHATSAPP',
+        'Students.ALU_RES_ID as ALU_RES_ID',
       ])
       .where(
-        "((Students.ALU_EMAIL IS NOT NULL and Students.ALU_EMAIL != '') or (Students.ALU_WHATSAPP IS NOT NULL and Students.ALU_WHATSAPP != ''))",
+        "((Students.ALU_EMAIL IS NOT NULL and Students.ALU_EMAIL != '') or (Students.ALU_WHATSAPP IS NOT NULL and Students.ALU_WHATSAPP != '') or (Students.ALU_RES_ID IS NOT NULL))",
       )
 
     if (studentIds && studentIds.length > 0) {
@@ -278,27 +277,7 @@ export class TutorMessagesService {
     }
   }
 
-  async getStatusSendTutorMessages(tutorMessageId: number): Promise<{
-    status: AggregatedTutorMessageStatus
-    metrics: {
-      email: {
-        pending: number
-        sent: number
-        fail: number
-        notSent: number
-        status: string
-        total: number
-      }
-      whatsapp: {
-        pending: number
-        sent: number
-        fail: number
-        notSent: number
-        status: string
-        total: number
-      }
-    }
-  }> {
+  async getStatusSendTutorMessages(tutorMessageId: number) {
     const qb = this.connection
       .getRepository(SendTutorMessage)
       .createQueryBuilder('stm')
@@ -335,6 +314,22 @@ export class TutorMessagesService {
         `SUM(CASE WHEN stm.statusWhatsapp IN (:...n) THEN 1 ELSE 0 END)`,
         'wa_not_sent',
       )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusInApp IN (:...pending) THEN 1 ELSE 0 END)`,
+        'inapp_pending',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusInApp IN (:...sent) THEN 1 ELSE 0 END)`,
+        'inapp_sent',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusInApp = :f THEN 1 ELSE 0 END)`,
+        'inapp_fail',
+      )
+      .addSelect(
+        `SUM(CASE WHEN stm.statusInApp IN (:...n) THEN 1 ELSE 0 END)`,
+        'inapp_not_sent',
+      )
 
       .where('stm.tutorMessageId = :id', { id: tutorMessageId })
       .setParameters({
@@ -360,6 +355,10 @@ export class TutorMessagesService {
       wa_sent: string
       wa_fail: string
       wa_not_sent: string
+      inapp_pending: string
+      inapp_sent: string
+      inapp_fail: string
+      inapp_not_sent: string
     }>()
 
     const total = Number(r?.total ?? 0)
@@ -378,21 +377,30 @@ export class TutorMessagesService {
       notSent: Number(r?.wa_not_sent ?? 0),
       total,
     }
+    const inAppCounts = {
+      pending: Number(r?.inapp_pending ?? 0),
+      sent: Number(r?.inapp_sent ?? 0),
+      fail: Number(r?.inapp_fail ?? 0),
+      notSent: Number(r?.inapp_not_sent ?? 0),
+      total,
+    }
 
     const emailStatus = decideChannelStatus(emailCounts)
     const waStatus = decideChannelStatus(waCounts)
-    const finalStatus = decideFinalStatus(emailStatus, waStatus)
+    const inAppStatus = decideChannelStatus(inAppCounts)
+    const finalStatus = decideFinalStatus(emailStatus, waStatus, inAppStatus)
 
     return {
       status: finalStatus,
       metrics: {
         email: { ...emailCounts, status: emailStatus },
         whatsapp: { ...waCounts, status: waStatus },
+        inApp: { ...inAppCounts, status: inAppStatus },
       },
     }
   }
 
-  private async verifyCountyWppOrEmailActive(schoolId: number) {
+  private async verifyCountyChannelsActive(schoolId: number) {
     const school = await this.connection.getRepository(School).findOne({
       where: {
         ESC_ID: schoolId,
@@ -408,7 +416,8 @@ export class TutorMessagesService {
 
     if (
       !county?.MUN_MENSAGEM_EMAIL_ATIVO &&
-      !county?.MUN_MENSAGEM_WHATSAPP_ATIVO
+      !county?.MUN_MENSAGEM_WHATSAPP_ATIVO &&
+      !county?.MUN_MENSAGEM_IN_APP_ATIVO
     ) {
       throw new ForbiddenException(
         'Município sem configuração de envio de mensagens',
@@ -418,6 +427,7 @@ export class TutorMessagesService {
     return {
       activeWpp: county.MUN_MENSAGEM_WHATSAPP_ATIVO,
       activeEmail: county.MUN_MENSAGEM_EMAIL_ATIVO,
+      activeInApp: county.MUN_MENSAGEM_IN_APP_ATIVO,
     }
   }
 }
